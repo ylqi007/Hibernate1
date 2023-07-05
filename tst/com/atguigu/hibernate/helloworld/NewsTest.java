@@ -36,8 +36,10 @@ class NewsTest {
         Transaction transaction = session.beginTransaction();
 
         // 4. 执行保存操作
-        News news = new News("Java1", "atguigu", new Date(new java.util.Date().getTime()));
-        session.save(news);
+        //News news = new News("Java1", "atguigu", new Date(new java.util.Date().getTime()));
+        //session.save(news);
+        News news2 = (News) session.get(News.class, 1);
+        System.out.println(news2);
 
         // 5. 提交事务
         transaction.commit();
