@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <!-- 1. 配置链接数据库的基本信息 -->
+        <property name="connection.username">root</property>
+        <property name="connection.password">rootadmin</property>
+        <property name="connection.driver_class">com.mysql.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mysql://localhost:3306/hibernate5?enabledTLSProtocols=TLSv1.2</property>
+        <!-- <property name="connection.url">jdbc:mysql:///hibernate5</property>--> <!--/localhost:3306 是默认的，可以省略-->
+
+        <!-- 2. 配置hibernate的基本信息-->
+        <property name="dialect">org.hibernate.dialect.MySQLDialect</property>  <!-- hibernate所使用的数据库方言-->
+        <property name="show_sql">true</property>      <!-- 执行操作时，是否在操作台打印SQL-->
+        <property name="format_sql">true</property>     <!-- 是否对SQL执行格式化 -->
+        <property name="hbm2ddl.auto">update</property> <!-- 指定自动生成数据表的策略 -->
+
+        <!-- 3. 指定关联的hbm.xml文件，注意是目录结构，而不是包结构 -->
+        <mapping resource="com/atguigu/hibernate/helloworld/News.hbm.xml"/>
+    </session-factory>
+</hibernate-configuration>
