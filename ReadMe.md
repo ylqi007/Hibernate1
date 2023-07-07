@@ -31,6 +31,35 @@
 ## 5. Hibernate配置文件
 `hibernate.cfg.xml`
 
+## 6. 持久化对象的状态
+站在持久化的角度，Hibernate把对象分为4种状态：
+1. 临时状态(Transient)
+   * 在使用代理主键的情况下，OID通常为null
+   * 不处于Session的缓存中
+   * 在数据库中没有对应的记录
+2. 持久化状态(Persistent)
+   * OID不为null
+   * 位于Session缓存中
+   * 若在数据库中已经有和其对应的记录，持久化对象和数据库中的相关记录对应
+   * Session在flush缓存时，会根据持久化对象属性的变化，来同步更新数据库
+   * 在同一个Session实例的缓存中，数据库表中的每条记录只对应唯一的持久化对象
+3. 游离状态(Detached)
+   * OID不为null
+   * 不再处于Session缓存中
+   * 一般情况下，游离对象是由持久化对象转变过来的，因此在数据库中可能还存在与它对应的记录
+4. 删除状态(Removed)
+   * 在数据库中没有和其OID对应的记录
+   * 不再处于Session缓存中
+   * 一般情况下，应用程序不该再使用被删除的对象
+
+以上的解释来自尚硅谷佟刚的课件。以下英文解释来自Baeldung网站, [Object States in Hibernate’s Session](https://www.baeldung.com/hibernate-session-object-states)
+
+**Object States**: In the context of Hibernates's _Session_, objects can be in one of three possible states: transient, persistent, or detached. 
+* **Transient**: An object we haven't attached to any session is in the transient state. Since it was never persisted, it doesn't have any representation in the database. Because no session is aware of it, it won't be saved automatically.
+* **Persistent**: An object that we've associated with a session is in the persistent state. We either saved it or read it from a persistence context, so it represents some row in the database.
+* **Detached**: When we close the session, all objects inside it become detached. Although they still represent rows in the database, they're no longer managed by any session:
+
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
