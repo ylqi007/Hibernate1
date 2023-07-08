@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
 import org.hibernate.HibernateException;
+import org.hibernate.PersistentObjectException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
@@ -172,5 +173,30 @@ class News2Test {
 
         session.close();
         session = sessionFactory.openSession();
+    }
+
+    /**
+     * persist():
+     * 1. 也会执行INSERT操作
+     *
+     * 和save()的区别:在调用persist()方法之前，若对象已经有ID了，则不会执行INSERT，而是抛出PersistentObjectException异常。
+     */
+    @Test
+    public void testPersist() {
+        News2 news = new News2("DD", "dd", new Date());
+
+        System.out.println(news);   // News{id=null, title='DD', author='dd', date=Sat Jul 08 12:18:30 PDT 2023}
+        session.persist(news);      // 发出INSERT语句
+        System.out.println(news);   // News{id=53, title='DD', author='dd', date=Sat Jul 08 12:18:30 PDT 2023}
+    }
+
+    @Test
+    public void testPersist2() {
+        News2 news = new News2("DD", "dd", new Date());
+        news.setId(100);
+
+        System.out.println(news);   // News{id=100, title='DD', author='dd', date=Sat Jul 08 12:19:40 PDT 2023}
+        // Throws exception: org.hibernate.PersistentObjectException: detached entity passed to persist: com.atguigu.hibernate.helloworld.News2
+        assertThrows(PersistentObjectException.class, () -> session.persist(news));
     }
 }
