@@ -59,6 +59,16 @@
 * **Persistent**: An object that we've associated with a session is in the persistent state. We either saved it or read it from a persistence context, so it represents some row in the database.
 * **Detached**: When we close the session, all objects inside it become detached. Although they still represent rows in the database, they're no longer managed by any session:
 
+## 7. Session的核心方法
+### 7.1 Session.save()
+* Session的`save()`方法使一个临时对象转变为持久化对象
+* Session的`save()`方法完成以下操作:
+  * 把News对象加入到Session缓存中, 使它进入持久化状态。
+  * 选用映射文件指定的标识符生成器(比如`<generator class="native"/>`), 为持久化对象分配唯一的OID。在使用代理主键的情况下,`setId()`方法为News对象设置OID使无效的。
+  * 在flush缓存的时候，计划执行一条INSERT语句。
+* Hibernate 通过持久化对象的OID来维持它和数据库相关记录的对应关系。**当News对象处于持久化状态时,不允许程序随意修改它的ID。**
+* `persist()`和`save()`区别：
+  * 当对一个OID不为Null的对象执行`save()`方法时, 会把该对象以一个新的OID保存到数据库中; 但执行`persist()`方法时会抛出一个异常。
 
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

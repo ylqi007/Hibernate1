@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Date;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
@@ -121,4 +123,54 @@ class News2Test {
         session = sessionFactory.openSession();
     }
 
+    /**
+     * save()方法
+     * 1. 使一个临时对象(transient)变为持久化对象(persist)
+     * 2. 为对象分配ID
+     * 3. 在flush缓存时，会发送一条INSERT语句
+     * 4. 在save()方法之前的ID是“无效的”，see testSave2()，并不会抛出异常。
+     * 5. 持久化对象的ID是不能被修改的！
+     */
+    @Test
+    public void testSave() {
+        News2 news = new News2("AA", "aa", new Date());
+
+        System.out.println(news);   // News{id=null, title='AA', author='aa', date=Sat Jul 08 11:34:28 PDT 2023}
+        System.out.println("session.contains(news)=" + session.contains(news)); // session.contains(news)=false
+        session.save(news);
+        System.out.println(news);   // News{id=23, title='AA', author='aa', date=Sat Jul 08 11:34:28 PDT 2023}
+        System.out.println("session.contains(news)=" + session.contains(news)); // session.contains(news)=true
+    }
+
+
+    @Test
+    public void testSave2() {
+        News2 news = new News2("AA", "aa", new Date());
+        news.setId(100);
+        System.out.println(news);   // News{id=100, title='AA', author='aa', date=Sat Jul 08 12:06:37 PDT 2023}
+        session.save(news);
+        System.out.println(news);   // News{id=48, title='AA', author='aa', date=Sat Jul 08 12:06:37 PDT 2023}
+    }
+
+    @Test
+    public void testSave3() {
+        News2 news = new News2("BB", "bb", new Date());
+        news.setId(100);
+
+        System.out.println(news);   // News{id=100, title='BB', author='bb', date=Sat Jul 08 12:11:08 PDT 2023}
+        session.save(news);
+        System.out.println(news);   // News{id=52, title='BB', author='bb', date=Sat Jul 08 12:11:08 PDT 2023}
+
+        news.setId(101);
+        System.out.println(news);   // News{id=101, title='BB', author='bb', date=Sat Jul 08 12:11:08 PDT 2023}
+
+        HibernateException exception = assertThrows(HibernateException.class, () -> transaction.commit());
+
+        final String msg = String.format("identifier of an instance of %s was altered from", news.getClass().getName());
+        System.out.println(msg);
+        assertTrue(exception.getMessage().contains(msg));
+
+        session.close();
+        session = sessionFactory.openSession();
+    }
 }
