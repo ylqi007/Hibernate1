@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
 import org.hibernate.HibernateException;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.ObjectNotFoundException;
 import org.hibernate.PersistentObjectException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
@@ -198,5 +200,68 @@ class News2Test {
         System.out.println(news);   // News{id=100, title='DD', author='dd', date=Sat Jul 08 12:19:40 PDT 2023}
         // Throws exception: org.hibernate.PersistentObjectException: detached entity passed to persist: com.atguigu.hibernate.helloworld.News2
         assertThrows(PersistentObjectException.class, () -> session.persist(news));
+    }
+
+    /**
+     * get() v.s. load():
+     * 1. 执行get(): 会立即加载对象；==> get是立即检索
+     *    而执行load()，若不使用该对象，则不会立即执行查询操作，而是返回一个代理对象。==> load是延迟检索
+     * 2. load() 方法可能会抛出：LazyInitializationException
+     *    在需要初始化代理对象之前关闭Session，就会抛出LazyInitializationException
+     * 3. 若数据表中没有对应的记录，且Session没有关闭：
+     *    get() 返回null
+     *    load() 若不使用该对象的任何属性，没有问题；若需要初始化了，则抛出异常。
+     */
+    @Test
+    public void testGet() {
+        News2 news = (News2) session.get(News2.class, 1);   // get()是立即检索
+        System.out.println(news);   // News{id=1, title='Java', author='atguigu', date=2023-07-04 23:12:12.0}
+    }
+
+    @Test
+    public void testGet1() {
+        News2 news = (News2) session.get(News2.class, 100); // 当数据库中不存在与OID对应的记录时, get()返回null
+        System.out.println(news);   // null
+    }
+
+    @Test
+    public void testLoad() {
+        News2 news = (News2) session.load(News2.class, 1);
+        System.out.println(news);   // News{id=1, title='Java', author='atguigu', date=2023-07-04 23:12:12.0}
+        System.out.println(news.getClass().getName());  // com.atguigu.hibernate.helloworld.News2_$$_jvstf23_1
+    }
+
+    /**
+     * session.load()是延迟加载。当需要使用load的返回对象，但是对象不存在时，会抛吃ObjectNotFoundException
+     */
+    @Test
+    public void tesLoad1() {
+        News2 news = (News2) session.load(News2.class, 100);
+        System.out.println(news.getClass().getName());
+        try {
+            System.out.println(news);
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertTrue(e instanceof ObjectNotFoundException);
+        }
+    }
+
+    /**
+     * 若数据表中没有对应的记录，且Session没有关闭：
+     * load()若不使用该对象的任何属性，没有问题；若需要初始化了，则抛出异常。
+     */
+    @Test
+    public void tesLoad2() {
+        News2 news = (News2) session.load(News2.class, 100);
+        System.out.println(news.getClass().getName());  // com.atguigu.hibernate.helloworld.News2_$$_jvst3f_1
+        session.close();
+        try {
+            System.out.println(news);   // org.hibernate.LazyInitializationException: could not initialize proxy - no Session
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertTrue(e instanceof LazyInitializationException);
+        }
+
+        session = sessionFactory.openSession();
     }
 }

@@ -75,6 +75,17 @@
 * 和`save()`的区别:
   * 在调用`persist()`方法之前，若对象已经有ID了，则不会执行INSERT，而是抛出PersistentObjectException异常。
 
+### 7.3 Session.get() & Session.load()
+* 都可以根据跟定的OID从数据库中加载一个持久化对象
+* 区别:
+  * 当数据库中不存在与OID对应的记录时,`load()`方法抛出ObjectNotFoundException异常, 而`get()`方法返回null。
+  * 两者采用不同的延迟检索策略: `load()`方法支持延迟加载策略,而`get()`不支持。
+  * 若数据表中没有对应的记录，且Session没有关闭：
+    * `get()`返回null
+    * `load()`若不使用该对象的任何属性，没有问题；若需要初始化了，则抛出异常。
+* `load()`方法可能会抛出：LazyInitializationException
+  * 在需要初始化代理对象之前关闭Session，就会抛出LazyInitializationException
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
