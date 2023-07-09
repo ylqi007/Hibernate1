@@ -442,4 +442,51 @@ class News2Test {
         // 在同一个Session的缓存中，不能存在两个相同OID的对象: news和news2的OID都是1
     }
 
+    /**
+     * Session的saveOrUpdate()方法同时包含了save()与update()方法的功能
+     *   * 当对象是游离对象时，执行update()方法
+     *   * 当对象是临时对象时，执行save()方法
+     * 判定对象为临时对象的标准：
+     *   * Java对象的OID为null
+     *   * 映射文件中为`<id>`设置了`unsaved-value`属性, 并且Java对象的OID取值与这个`unsaved-value`属性值匹配
+     */
+    @Test
+    public void testSaveOrUpdate() {
+        News2 news = new News2("EE", "ee", new Date()); // 此时OID为null, news为临时对象，执行save方法，也就是发出INSERT语句
+        System.out.println(news);   // News{id=null, title='EE', author='ee', date=Thu Jul 06 22:54:23 PDT 2023}
+        session.saveOrUpdate(news);
+        System.out.println(news);   // News{id=6, title='EE', author='ee', date=Thu Jul 06 22:54:23 PDT 2023}
+    }
+
+    /**
+     * 注意：
+     * 1. 若OID不为空，但数据表中还没有和其对应的记录，会抛出一个异常
+     * 2. 了解内容：若OID值等于id的unsaved-value属性值的对象，也会被认为是一个游离对象。
+     */
+    @Test
+    public void testSaveOrUpdate1() {
+        News2 news = new News2("FFF", "fff", new Date());
+        news.setId(100);
+        System.out.println(news);   // News{id=100, title='FFF', author='fff', date=Sun Jul 09 12:27:40 PDT 2023}
+        session.saveOrUpdate(news); // 执行update方法，并抛出 org.hibernate.StaleStateException: Batch update returned unexpected row count from update [0]; actual row count: 0; expected: 1
+        System.out.println(news);   // News{id=100, title='FFF', author='fff', date=Sun Jul 09 12:27:40 PDT 2023}
+    }
+
+    @Test
+    public void testSaveOrUpdate2() {
+        News2 news = new News2("FFF", "eee", new Date());
+        news.setId(10);
+        System.out.println(news);   // News{id=10, title='FFF', author='eee', date=Sun Jul 09 12:28:31 PDT 2023}
+        session.saveOrUpdate(news); // 判定为游离对象(news在缓存中存在)，执行update方法，发送UPDATE语句
+        System.out.println(news);   // News{id=10, title='FFF', author='eee', date=Sun Jul 09 12:28:31 PDT 2023}
+    }
+
+    @Test
+    public void testSaveOrUpdate3() {
+        News2 news = new News2("FFF", "ee7", new Date());
+        news.setId(11);
+        System.out.println(news);   // News{id=11, title='FFF', author='ee7', date=Thu Jul 06 23:02:23 PDT 2023}
+        session.saveOrUpdate(news); // 此时id=11 == unsaved-value，即便数据表中不存在该记录，也会执行saveOrUpdate，会执行save方法，发送INSERT语句
+        System.out.println(news);   // News{id=7, title='FFF', author='ee7', date=Thu Jul 06 23:02:23 PDT 2023}
+    }
 }

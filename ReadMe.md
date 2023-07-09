@@ -126,6 +126,13 @@
 2. 若数据表中没有记录，但还调用了`update()`方法，会抛出异常。 see `News2Test.testUpdate5()`
 3. 当`update()`方法关联一个游离对象时，如果在Session的缓存中已经有了相同的OID对象，会抛出异常。因为在Session缓存中不能有两个OID相同的对象。
 
+### 7.5 Session.saveOrUpdate()
+* Session的`saveOrUpdate()`方法同时包含了`save()`与`update()`方法的功能
+  * 当对象是临时对象时，执行`save()`方法
+  * 当对象是游离对象时(i.e.在Session缓存中存在)，执行`update()`方法
+* 判定对象为临时对象的标准：
+  * Java对象的OID为null
+  * 映射文件中为`<id>`设置了`unsaved-value`属性, 并且Java对象的OID取值与这个`unsaved-value`属性值匹配
 
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

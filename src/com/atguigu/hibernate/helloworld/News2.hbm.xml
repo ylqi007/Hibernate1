@@ -6,10 +6,9 @@
 <hibernate-mapping>
 
     <!-- select-before-update="true-->
-    <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2">
     <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2"> <!-- select-before-update="true" -->
         <!--id的"name"指的是News类中的属性名，column的"name"指的是表中的列名-->
-        <id name="id" type="java.lang.Integer">
+        <id name="id" type="java.lang.Integer"> <!-- unsaved-value="11"-->
             <column name="ID"/>
             <generator class="native"/> <!-- 指定主键的生成方式, native:使用数据库本地的方式-->
         </id>
