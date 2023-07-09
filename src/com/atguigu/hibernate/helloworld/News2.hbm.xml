@@ -7,6 +7,7 @@
 
     <!-- select-before-update="true-->
     <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2">
+    <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2"> <!-- select-before-update="true" -->
         <!--id的"name"指的是News类中的属性名，column的"name"指的是表中的列名-->
         <id name="id" type="java.lang.Integer">
             <column name="ID"/>

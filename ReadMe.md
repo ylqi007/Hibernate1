@@ -59,7 +59,7 @@
 #### 6.2.3 clean()
 * 清理缓存.
 
-## 6. 持久化对象的状态
+### 6.3 持久化对象的状态
 站在持久化的角度，Hibernate把对象分为4种状态：
 1. 临时状态(Transient)
    * 在使用代理主键的情况下，OID通常为null
@@ -113,6 +113,19 @@
     * `load()`若不使用该对象的任何属性，没有问题；若需要初始化了，则抛出异常。
 * `load()`方法可能会抛出：LazyInitializationException
   * 在需要初始化代理对象之前关闭Session，就会抛出LazyInitializationException
+
+### 7.4 Session.update()
+* Session的`update()`方法使一个游离对象转变为持久化对象,并且计划执行一条UPDATE语句.
+* 若希望Session仅当修改了News对象的属性时, 才执行`update()`语句, 可以把映射文件(hbm.xml)中`<class>`元素的select-before-update设为true, 该属性的默认值为false
+* 当`update()`方法关联一个游离对象时, 如果在Session的缓存中已经存在相同OID的持久化对象, 会抛出异常.
+* 当`update()`方法关联一个游离对象时, 如果在数据库中不存在相应的记录, 也会抛出异常.
+
+需要注意的是:
+1. 无论需要更新的游离对象和数据表中的记录是否一致，都会发送UPDATE语句。
+   * 如何能让`update()`方法不再盲目地发出UPDATE语句？在.hbm.xml文件的class节点设置`select-before-update=true` (default=false)。但通常不需要设置该属性
+2. 若数据表中没有记录，但还调用了`update()`方法，会抛出异常。 see `News2Test.testUpdate5()`
+3. 当`update()`方法关联一个游离对象时，如果在Session的缓存中已经有了相同的OID对象，会抛出异常。因为在Session缓存中不能有两个OID相同的对象。
+
 
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

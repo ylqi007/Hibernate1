@@ -348,4 +348,98 @@ class News2Test {
 
         session = sessionFactory.openSession();
     }
+
+    /**
+     * update():
+     * 1. 若更新一个持久化对象，不需要显式调用update方法，因为在调用Transaction.commit()方法时，会先执行Session.flush()方法
+     * 2. 更新一个游离对象，需要显式的调用session的update方法。可以把一个游离对象变为持久化对象
+     *
+     * 需要注意的：
+     * 1. 无论需要更新的游离对象和数据表中的记录是否一致，都会发送UPDATE语句。
+     * 如何能让update方法不再盲目地发出UPDATE语句？在.hbm.xml文件的class节点设置select-before-update=true (default=false)。但通常不需要设置该属性
+     * 2. 若数据表中没有记录，但还调用了update方法，会抛出异常。 see testUpdate5()
+     * 3. 当update()方法关联一个游离对象时，如果在Session的缓存中已经有了相同的OID对象，会抛出异常。因为在Session缓存中不能有两个OID相同的对象。
+     */
+    @Test
+    public void testUpdate() {
+        News2 news = (News2) session.get(News2.class, 1);   // 会发送一条SELECT语句
+        news.setAuthor("Oracle");
+
+        //session.update(news); // 可以省略，transaction.commit()时，会发送一条UPDATE语句
+    }
+
+    @Test
+    public void testUpdate2() {
+        News2 news = (News2) session.get(News2.class, 1);
+        transaction.commit();
+        session.close();    // session close之后，缓存会清空
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();   // 开启新的transaction
+
+        // 此时news并不在新的session中，是一个游离对象
+        // 此时想要update对象。则需要显式的update
+        news.setAuthor("SUN");
+        session.update(news);   // 会发送一条UPDATE语句
+    }
+
+    @Test
+    public void testUpdate3() {
+        News2 news = (News2) session.get(News2.class, 1);
+        transaction.commit();
+        session.close();    // session close之后，缓存会清空
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();   // 开启新的transaction
+
+        session.update(news);   // 即便对象是原封不对的，也会发送UPDATE语句。因为新的session并不知道数据表中的状态
+    }
+
+    /**
+     * select-before-update=false or default
+     *  update()会发送一条UPDATE语句，无论要更新的对象是否发生变化
+     *
+     * select-before-update=true
+     *  update()会发送一条SELECT语句，检查Session缓存中的对象和DB中对象是否由差异，无差异的话，便不会发送UPDATE语句
+     */
+    @Test
+    public void testUpdate4() {
+        News2 news = (News2) session.get(News2.class, 1);
+        transaction.commit();
+        session.close();    // session close之后，缓存会清空
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();   // 开启新的transaction
+
+        session.update(news);   // 此时对象是原封不对的，因为设置了select-before-update=true，在update之前会执行一次SELECT，此时不会盲目触发UPDATE
+    }
+
+    @Test
+    public void testUpdate5() {
+        News2 news = (News2) session.get(News2.class, 1);
+        transaction.commit();
+        session.close();    // session close之后，缓存会清空
+
+        news.setId(100);
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();   // 开启新的transaction
+
+        // transaction.commit() 会抛出: org.hibernate.StaleStateException: Batch update returned unexpected row count from update [0]; actual row count: 0; expected: 1
+        session.update(news);  // 若数据表中没有记录，但还调用了update方法，会抛出异常
+    }
+
+    @Test
+    public void testUpdate6() {
+        News2 news = (News2) session.get(News2.class, 1);
+        transaction.commit();
+        session.close();    // session close之后，缓存会清空
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();   // 开启新的transaction
+        News2 news2 = (News2) session.get(News2.class, 1);
+        session.update(news);  // org.hibernate.NonUniqueObjectException: a different object with the same identifier value was already associated with the session: [com.atguigu.hibernate.helloworld.News2#1]
+        // 在同一个Session的缓存中，不能存在两个相同OID的对象: news和news2的OID都是1
+    }
+
 }
