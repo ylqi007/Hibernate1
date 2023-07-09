@@ -49,6 +49,90 @@ class News2Test {
     }
 
     /**
+     * 只发送了一条SELECT语句
+     * 由于Session缓存中已经存在目标对象，第二次get()只是将缓存中对象的引用赋给news1，而没有再次执行SELECT操作。
+     */
+    @Test
+    public void testSessionCache() {
+        News news = (News) session.get(News.class, 1);
+        System.out.println(news);   // News{id=1, title='Java1', author='SUN', date=2023-07-04}
+
+        News news1 = (News) session.get(News.class, 1);
+        System.out.println(news1);  // News{id=1, title='Java1', author='SUN', date=2023-07-04}
+
+        assertTrue(news == news1);
+    }
+
+    /**
+     * flush: 使数据表中的对象和Session缓存中的对象的状态保持一致。为了保持一致，则可能会发送对应的SQL语句。
+     * 1. 调用Transaction的commit()方法中：先调用Session.flush(),再提交事务
+     * 2. flush()方法可能会发送SQL语句，但不会提交事务。
+     * 3. 注意：在未提交事务or显式的调用session.flush()方法之前，也有可能会执行flush()操作
+     *  1）执行HQL或QBC查询，会先进行一次flush操作，以得到数据表的最新记录。
+     *  2）若记录的ID是由底层数据库使用自增的方法生成的，则在调用save()方法后，就会立即发送INSERT语句。因为save()方法后，必须保证对象的ID是存在的。
+     */
+    @Test
+    public void testSessionFlush() {
+        News news = (News) session.get(News.class, 1);  // 发送SELECT语句
+        System.out.println(news);   // News{id=1, title='Java1', author='SUN', date=2023-07-04}
+        news.setAuthor("Oracle");   // 在flush时，会发送UPDATE语句：news.setAuthor("Oracle")会改变Session中对象的状态，导致与DB中对象的状态不一致
+        // Session会检测到不同。在transaction.commit()之前，Session会发送flush语句，也就是一条UPDATE语句
+    }
+
+    @Test
+    public void testSessionFlush1() {
+        News news = (News) session.get(News.class, 1);  // 发送SELECT语句
+        System.out.println(news);   // News{id=1, title='Java1', author='SUN', date=2023-07-04}
+        news.setAuthor("Oracle");
+
+        News news1 = (News) session.createCriteria(News.class).uniqueResult();  // 通过QBC查询出来的就是最新的状态，i.e. author="Oracle"
+        System.out.println(news1);  // News{id=1, title='Java1', author='Oracle', date=2023-07-04}
+    }
+
+    /**
+     * <generator class="native"/>
+     * 如果ID的generator是native，也就是由底层数据库使用自增的方式，则在调用save()方法后，就会立即发送INSERT语句。因为save()方法后，必须保证对象的ID是存在的。
+     *
+     * <generator class="hilo"/>
+     * 如果将ID的generator改为 hilo，则在session.save()执行之后，在transaction.commit()之前，会发送SELECT和UPDATE语句，没有INSERT语句
+     * SELECT和UPDATE是来确认ID值的。
+     */
+    @Test
+    public void testSessionFlush2() {
+        News news = new News("Java1", "atguigu", new java.sql.Date(new Date().getTime()));
+        session.save(news);
+    }
+
+    /**
+     * refresh(): 会强制发送SELECT语句，以使Session缓存中对象的状态和数据表中对应的记录保持一致
+     * <property name="connection.isolation">2</property> 设置Hibernate的事务隔离级别为READ COMMITTED
+     */
+    @Test
+    public void testRefresh() {
+        News news = (News) session.get(News.class, 1);  // 发送了一条SELECT语句
+        System.out.println(news);   // News{id=1, title='Java1', author='atguigu', date=2023-07-08}
+        // 第二次打印之前，手动更改DB
+        session.refresh(news);      // 会再次发送SELECT语句
+        System.out.println(news);   // News{id=1, title='Java1', author='atguigu', date=2023-07-08}
+    }
+
+    /**
+     * clean(): 清理缓存
+     */
+    @Test
+    public void testClear() {
+        News news1 = (News) session.get(News.class, 1);
+        News news2 = (News) session.get(News.class, 1); //call了两次get()方法，由于Session发缓存的存在，只送了一条SELECT语句
+    }
+
+    @Test
+    public void testClear1() {
+        News news1 = (News) session.get(News.class, 1); // 发送了一条SELECT语句
+        session.clear();
+        News news2 = (News) session.get(News.class, 1); // 再次发送了一条SELECT语句
+    }
+
+    /**
      * session.contains(news)=false
      */
     @Test

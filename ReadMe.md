@@ -31,6 +31,34 @@
 ## 5. Hibernate配置文件
 `hibernate.cfg.xml`
 
+## 6. Session的概述
+* `Session`接口是Hibernate向应用程序提供的操纵数据库的最主要的接口,它提供了基本的保存,更新,删除和加载Java对象的方法(查询并不是由Session直接完成的，需要通过query)。
+* `Session`具有一个缓存,位于缓存中的对象称为持久化对象,它和数据库中的相关记录对应. `Session`能够在某些时间点,按照缓存中对象的变化来执行相关的SQL语句, 来同步更新数据库, 这一过程被称为**刷新缓存(flush)**.
+* 站在持久化的角度, Hibernate把对象分为4种状态: 持久化状态, 临时状态, 游离状态, 删除状态. `Session`的特定方法能使对象从一个状态转换到另一个状态.
+
+### 6.1 Session缓存
+* 在`Session`接口的实现中包含一系列的*Java集合*, 这些Java集合构成了Session缓存. 只要Session实例没有结束生命周期, 且没有清理缓存，则存放在它缓存中的对象也不会结束生命周期.
+* Session缓存可减少Hibernate应用程序访问数据库的频率。
+
+### 6.2 操作Session缓存
+#### 6.2.1 flush()
+* `flush()`: Session按照缓存中对象的属性变化来同步更新数据库
+* 默认情况下Session在以下时间点刷新缓存：
+  * 显式调用Session的`flush()`方法
+  * 当应用程序调用Transaction的`commit()`方法的时, 该方法先flush，然后在向数据库提交事务
+  * 当应用程序执行一些查询(HQL, Criteria)操作时， 如果缓存中持久化对象的属性已经发生了变化，会先flush缓存，以保证查询结果能够反映持久化对象的最新状态
+* flush缓存的例外情况: 如果对象使用native生成器生成OID, 那么当调用Session的`save()`方法保存对象时, 会立即执行向数据库插入该实体的INSERT语句.
+* `commit()`和`flush()`方法的区别： 
+  * flush执行一系列SQL语句，但不提交事务； 
+  * commit方法先调用flush()方法，然后提交事务. 提交事务意味着对数据库操作永久保存下来。
+
+#### 6.2.2 refresh()
+会强制发送SELECT语句，以使Session缓存中对象的状态和数据表中对应的记录保持一致
+* 具体执行效果还与事务隔离级别有关 `<property name="connection.isolation">2</property>`
+
+#### 6.2.3 clean()
+* 清理缓存.
+
 ## 6. 持久化对象的状态
 站在持久化的角度，Hibernate把对象分为4种状态：
 1. 临时状态(Transient)
