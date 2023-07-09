@@ -143,6 +143,38 @@
 * Hibernate的配置文件(Hibernate.cfg.xml)中有一个`hibernate.use_identifier_rollback`属性, 其默认值为false,若把它设为true, 
   将改变`delete()`方法的运行行为: `delete()`方法会把持久化对象或游离对象的OID设置为null, 使它们变为临时对象
 
+### 7.7 Session.evict()
+* 从session缓存中把指定的持久化对象移除
+
+### 7.8 通过Hibernate调用存储过程
+* `Work`接口直接通过JDBC API来访问数据库的操作
+    ```java
+    public interface Work {
+        /**
+         * Execute the discrete work encapsulated by this work instance using the supplied connection.
+         *
+         * @param connection The connection on which to perform the work.
+         * @throws SQLException Thrown during execution of the underlying JDBC interaction.
+         * @throws HibernateException Generally indicates a wrapped SQLException.
+         */
+        public void execute(Connection connection) throws SQLException;
+    }
+    ```
+* Session的`doWork(Work)`方法用于执行Work对象指定的操作, 即调用Work对象的`execute()`方法. Session会把当前使用的数据库连接传递给`execute()`方法.
+    ```java
+    Work work = new Work() {
+        @Override
+        public void execute(Connection connection) throws SQLException {
+            System.out.println("## connection=" + connection);  // ## connection=com.mysql.jdbc.JDBC4Connection@f9b5552，即原生的JDBC connection
+            // 然后用connection 调用存储过程
+            String procedure = "call test procedure";
+            CallableStatement callableStatement = connection.prepareCall(procedure);
+            callableStatement.executeUpdate();
+        };
+        
+    session.doWork(work);
+    ```
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)

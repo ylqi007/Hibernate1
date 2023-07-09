@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Date;
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
@@ -14,6 +17,7 @@ import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.jdbc.Work;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
 import org.junit.jupiter.api.AfterEach;
@@ -532,5 +536,36 @@ class News2Test {
         System.out.println(news);   // News{id=5, title='DD', author='dd', date=2023-07-06 21:20:04.0}
         session.delete(news);       // 发送DELETE语句，对应记录被删除。但是DELETE语句并非立即发送，而是在flush时发送，所以下面依然可以打印
         System.out.println(news);   // News{id=null, title='DD', author='dd', date=2023-07-06 21:20:04.0}, 即使此时还没有发送DELETE语句，OID也已经被设置为null了
+    }
+
+    /**
+     * evict(): 从session缓存中把指定的持久化对象移除
+     */
+    @Test
+    public void testEvict() {
+        News2 news1 = (News2) session.get(News2.class, 1);
+        News2 news2 = (News2) session.get(News2.class, 2);
+
+        news1.setAuthor("AAA");
+        news2.setAuthor("BBB");
+
+        session.evict(news1);   // 有两条SELECT语句，一条UPDATE语句，news1没有被更改
+    }
+
+    /**
+     * doWork(): 直接通过JDBC API来访问数据库的操作
+     */
+    @Test
+    public void testDoWork() {
+        session.doWork(new Work() {
+            @Override
+            public void execute(Connection connection) throws SQLException {
+                System.out.println("## connection=" + connection);  // ## connection=com.mysql.jdbc.JDBC4Connection@f9b5552，即原生的JDBC connection
+                // 然后用connection 调用存储过程
+                // String procedure = String.format("UPDATE news2 SET author = %s WHERE id = %d", "Oracle", 9); // Exception
+                // CallableStatement callableStatement = connection.prepareCall(procedure);
+                // callableStatement.executeUpdate();
+            }
+        });
     }
 }
