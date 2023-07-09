@@ -489,4 +489,48 @@ class News2Test {
         session.saveOrUpdate(news); // 此时id=11 == unsaved-value，即便数据表中不存在该记录，也会执行saveOrUpdate，会执行save方法，发送INSERT语句
         System.out.println(news);   // News{id=7, title='FFF', author='ee7', date=Thu Jul 06 23:02:23 PDT 2023}
     }
+
+    /**
+     * delete(): 执行删除操作，只要OID和数据表中的一条记录对应，就会准备执行delete操作。若OID在数据表中没有对应记录，则抛出异常。
+     *
+     * 可以通过设置Hibernate配置文件，hibernate.use_identifier_rollback为true，使删除对象后，把其OID设置为null
+     */
+    @Test
+    public void testDelete() {
+        News2 news = new News2();
+        news.setId(1);  // 此时news是一个游离对象(Detached): OID!=null && session中并“不存在”该对象
+
+        session.delete(news);   // 发送DELETE语句，对应记录被删除
+    }
+
+    @Test
+    public void testDelete2() {
+        News2 news = (News2) session.get(News2.class, 2); // 此时news是一个持久化对象(Persist): OID!=null && session中并“存在”该对象
+
+        session.delete(news);   // 发送DELETE语句，对应记录被删除
+    }
+
+    @Test
+    public void testDelete3() {
+        News2 news = new News2();
+        news.setId(11);         // 此时news是一个游离对象(Detached)，数据表中没有对应记录
+
+        session.delete(news);   // 发送DELETE语句，抛出：org.hibernate.StaleStateException: Batch update returned unexpected row count from update [0]; actual row count: 0; expected: 1
+    }
+
+    @Test
+    public void testDelete4() {
+        News2 news = (News2) session.get(News2.class, 8); // 此时news是一个持久化对象(Persist): OID!=null && session中并“存在”该对象
+
+        session.delete(news);       // 发送DELETE语句，对应记录被删除。但是DELETE语句并非立即发送，而是在flush时发送，所以下面依然可以打印
+        System.out.println(news);   // News{id=3, title='BB', author='bb', date=2023-07-06 21:15:47.0}
+    }
+
+    @Test
+    public void testDelete5() {
+        News2 news = (News2) session.get(News2.class, 5); // 此时news是一个持久化对象(Persist): OID!=null && session中并“存在”该对象
+        System.out.println(news);   // News{id=5, title='DD', author='dd', date=2023-07-06 21:20:04.0}
+        session.delete(news);       // 发送DELETE语句，对应记录被删除。但是DELETE语句并非立即发送，而是在flush时发送，所以下面依然可以打印
+        System.out.println(news);   // News{id=null, title='DD', author='dd', date=2023-07-06 21:20:04.0}, 即使此时还没有发送DELETE语句，OID也已经被设置为null了
+    }
 }

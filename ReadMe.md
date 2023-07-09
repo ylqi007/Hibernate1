@@ -134,6 +134,15 @@
   * Java对象的OID为null
   * 映射文件中为`<id>`设置了`unsaved-value`属性, 并且Java对象的OID取值与这个`unsaved-value`属性值匹配
 
+### 7.6 Session.delete()
+* Session的`delete()`方法既可以删除一个游离对象, 也可以删除一个持久化对象
+* 执行删除操作，只要OID和数据表中的一条记录对应，就会准备执行delete操作。若OID在数据表中没有对应记录，则抛出异常。
+* Session的`delete()`方法处理过程
+  * 计划执行一条DELETE语句
+  * 把对象从Session缓存中删除, 该对象进入删除状态
+* Hibernate的配置文件(Hibernate.cfg.xml)中有一个`hibernate.use_identifier_rollback`属性, 其默认值为false,若把它设为true, 
+  将改变`delete()`方法的运行行为: `delete()`方法会把持久化对象或游离对象的OID设置为null, 使它们变为临时对象
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
