@@ -18,6 +18,21 @@
         <property name="format_sql">true</property>     <!-- 是否对SQL执行格式化 -->
         <property name="hbm2ddl.auto">update</property> <!-- 指定自动生成数据表的策略 -->
         <!-- <property name="use_identifier_rollback">true</property> &lt;!&ndash; 删除对象后，使其OID置为null &ndash;&gt;-->
+        <!-- <property name="connection.isolation">2</property> &lt;!&ndash; 设置Hibernate的事务隔离级别 &ndash;&gt;-->
+
+        <!-- 配置C3P0数据源 -->
+        <property name="c3p0.max_size">10</property>
+        <property name="c3p0.min_size">5</property>
+        <property name="c3p0.acquire_increment">2</property>
+
+        <property name="c3p0.idle_test_period">2000</property>
+        <property name="c3p0.timeout">2000</property>
+        <property name="c3p0.max_statements">10</property>
+
+        <!-- 设定JDBC的Statement读取数据的时候每次从数据库中读取的记录条数 (对Oracle有效，对MySQL无效) -->
+        <property name="hibernate.jdbc.fetch_size">100</property>
+        <!-- 设定对数据库进行批量删除，批量更新和批量插入的时候的批次大小 (对Oracle有效，对MySQL无效) -->
+        <property name="hibernate.jdbc.batch_size">30</property>
 
         <!-- 3. 指定关联的hbm.xml文件，注意是目录结构，而不是包结构 -->
         <mapping resource="com/atguigu/hibernate/helloworld/News.hbm.xml"/>

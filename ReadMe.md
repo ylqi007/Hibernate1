@@ -175,12 +175,53 @@
     session.doWork(work);
     ```
 
+
+## 8. Hibernate配置文件(hibernate.cfg.xml)
+* Hibernate配置文件主要用于**配置数据库连接**和**Hibernate运行时所需的各种属性**。
+* 每个Hibernate配置文件对应一个Configuration对象
+* Hibernate配置文件可以有两种格式:
+  * hibernate.properties
+  * hibernate.cfg.xml
+
+### 8.1 hibernate.cfg.xml的常用属性
+* JDBC 连接属性
+  * `connection.url`：数据库URL
+  * `connection.username`：数据库用户名
+  * `connection.password`：数据库用户密码
+  * `connection.driver_class`：数据库JDBC驱动
+  * `dialect`：配置数据库的方言，根据底层的数据库不同产生不同的SQL语句，Hibernate会针对数据库的特性在访问时进行优化 
+* C3P0 数据库连接池属性
+  * `hibernate.c3p0.max_size`: 数据库连接池的最大连接数
+  * `hibernate.c3p0.min_size`: 数据库连接池的最小连接数
+  * `hibernate.c3p0.acquire_increment`: 当数据库连接池中的连接耗尽时, 同一时刻获取多少个数据库连接
+  * `hibernate.c3p0.timeout`: 数据库连接池中连接对象在多长时间没有使用过后，就应该被销毁
+  * `hibernate.c3p0.idle_test_period`: 表示连接池检测线程多长时间检测一次池内的所有链接对象是否超时. 连接池本身不会把自己从连接池中移除，
+    而是专门有一个线程按照一定的时间间隔来做这件事， 这个线程通过比较连接对象最后一次被使用时间和当前时间的时间差来和`c3p0.timeout`做对比，进而决定是否销毁这个连接对象。
+  * `hibernate.c3p0.max_statements`: 缓存Statement对象的数量
+
+### 8.2 hibernate.cfg.xml其他常用属性
+* `show_sql`：是否将运行期生成的SQL输出到日志以供调试, 取值 `true | false`
+* `format_sql`：是否将SQL转化为格式良好的SQL, 取值`true | false`
+* `hbm2ddl.auto`：在启动和停止时自动地创建，更新或删除数据库模式。 取值`create | update | create-drop | validate`
+* `hibernate.jdbc.fetch_size`: 实质是调用`Statement.setFetchSize()`方法设定JDBC的Statement读取数据的时候每次从数据库中取出的记录条数。
+* `hibernate.jdbc.batch_size`: 设定对数据库进行批量删除，批量更新和批量插入的时候的批次大小，类似于设置缓冲区大小的意思。
+
+### 8.3 在Hibernate中使用C3P0数据源
+1. 导入jar包
+   * `hibernate-release-4.2.4.Final/lib/optional/c3p0/`路径下的所有jar包(4.2.4版本中有3个jar包)
+2. 加入配置
+   * `hibernate.c3p0.max_size`: 数据库连接池的最大连接数 (当前应用有高并发，且并发量特别大，应用可以使用的最多连接数就是max_size，而不是无穷地向数据库服务器索要连接)
+   * `hibernate.c3p0.min_size`: 数据库连接池的最小连接数 (当前应用没有任何请求，没有任何并发，这个时候也要在连接池中保持一定量的并发。)
+   * `hibernate.c3p0.acquire_increment`: 当数据库连接池中的连接耗尽时, 同一时刻获取多少个数据库连接
+   * `hibernate.c3p0.timeout`: 数据库连接池中连接对象在多长时间没有使用过后， 就应该被销毁
+   * `hibernate.c3p0.idle_test_period`: 表示连接池检测线程多长时间检测一次池内的所有链接对象是否超时. 连接池本身不会把自己从连接池中移除，
+   而是专门有一个线程按照一定的时间间隔来做这件事，这个线程通过比较连接对象最后一次被使用时间和当前时间的时间差来和 timeout 做对比，进而决定是否销毁这个连接对象。
+   * `hibernate.c3p0.max_statements`: 缓存 Statement 对象的数量
+
+Hibernate Configuration 文档连接: `hibernate-release-4.2.4.Final/documentation/manual/en-US/html/ch03.html`
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
 3. [HIBERNATE -- Community Documentation, 4.2](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/)
-
-希望执行后，有表，且表中有记录
-```sql
-DROP TABLE hibernate5.news CASCADE;
-```
+4. [Chapter 3. Configuration](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/#session-configuration)

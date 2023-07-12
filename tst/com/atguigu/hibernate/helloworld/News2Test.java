@@ -554,6 +554,8 @@ class News2Test {
 
     /**
      * doWork(): 直接通过JDBC API来访问数据库的操作
+     *
+     * 当配置C3P0后，测试打印出来的数据库连接是: ## connection=com.mchange.v2.c3p0.impl.NewProxyConnection@5c089b2f
      */
     @Test
     public void testDoWork() {
