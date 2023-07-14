@@ -6,7 +6,7 @@
 <hibernate-mapping>
 
     <!-- select-before-update="true-->
-    <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2"> <!-- select-before-update="true" -->
+    <class name="com.atguigu.hibernate.helloworld.News2" table="NEWS2"> <!-- select-before-update="true", dynamic-update="true" -->
         <!--id的"name"指的是News类中的属性名，column的"name"指的是表中的列名-->
         <id name="id" type="java.lang.Integer"> <!-- unsaved-value="11"-->
             <column name="ID"/>
@@ -23,4 +23,5 @@
             <column name="DATE"/>
         </property>
     </class>
+
 </hibernate-mapping>

@@ -570,4 +570,131 @@ class News2Test {
             }
         });
     }
+
+    /**
+     * 代码中只设置了author字段，但是Hibernate发出的UPDATE语句把3个字段都更新了，说明这个UPDATE语句并不是动态生成的。
+     * Hibernate:
+     *     update
+     *         NEWS2
+     *     set
+     *         TITLE=?,
+     *         AUTHOR=?,
+     *         DATE=?
+     *     where
+     *         ID=?
+     */
+    @Test
+    public void testDynamicUpdate() {
+        News2 news2 = (News2) session.get(News2.class, 1);
+        news2.setAuthor("~~~~~");
+    }
+
+    /**
+     * 在News2.hbm.xml的<class>中设置 dynamic-update="true"
+     * 此时，Hibernate发出的UPDATE语句就只包含要更新的字段。
+     * Hibernate:
+     *     update
+     *         NEWS2
+     *     set
+     *         AUTHOR=?
+     *     where
+     *         ID=?
+     */
+    @Test
+    public void testDynamicUpdate1() {
+        News2 news2 = (News2) session.get(News2.class, 1);
+        news2.setAuthor("ABCD");
+    }
+
+
+    /**
+     * <generator class="increment"/>
+     * Hibernate:
+     *     select
+     *         max(ID)
+     *     from
+     *         NEWS2
+     * Hibernate:
+     *     insert
+     *     into
+     *         NEWS2
+     *         (TITLE, AUTHOR, DATE, ID)
+     *     values
+     *         (?, ?, ?, ?)
+     *
+     * 会发出SELECT语句查询最大的ID，然后执行插入操作。
+     *
+     * 使用 increment generator 存在并发的问题。
+     */
+    @Test
+    public void testGeneratorIncrement() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        session.save(news2);
+    }
+
+    /**
+     * 在5s之内run这个test两次，会出现异常，第二次的save操作失败，数据没有插入到DB
+     * Caused by: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException: Duplicate entry '57' for key 'news2.PRIMARY'
+     * 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+     * 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+     * 	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+     * 	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:490)
+     */
+    @Test
+    public void testGeneratorIncrement1() throws InterruptedException {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        session.save(news2);
+
+        Thread.sleep(5000);
+    }
+
+
+    /**
+     * <generator class="identity"/>
+     * Hibernate:
+     *     insert
+     *     into
+     *         NEWS2
+     *         (TITLE, AUTHOR, DATE)
+     *     values
+     *         (?, ?, ?)
+     * Hibernate 发出的INSERT语句只包含三个fields，而不包含id，说明使用的是由底层数据库生成。
+     */
+    @Test
+    public void testGeneratorIdentity() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        session.save(news2);
+    }
+
+    /**
+     * table="NEWS2_hilo"
+     * <generator class="hilo"/>
+     * 会生成一张额外的表：table hibernate_unique_key
+     *
+     * Hibernate:
+     *     select
+     *         next_hi
+     *     from
+     *         hibernate_unique_key for update
+     *
+     * Hibernate:
+     *     update
+     *         hibernate_unique_key
+     *     set
+     *         next_hi = ?
+     *     where
+     *         next_hi = ?
+     * Hibernate:
+     *     insert
+     *     into
+     *         NEWS2_hilo
+     *         (TITLE, AUTHOR, DATE, ID)
+     *     values
+     *         (?, ?, ?, ?)
+     */
+    @Test
+    public void testGeneratorHilo() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        session.save(news2);
+    }
 }

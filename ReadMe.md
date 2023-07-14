@@ -220,6 +220,126 @@
 
 Hibernate Configuration 文档连接: `hibernate-release-4.2.4.Final/documentation/manual/en-US/html/ch03.html`
 
+
+## 9. Hibernate对象关系映射文件(*.hbm.xml, hibernate mapping file)
+* POJO类和关系数据库之间的***映射***可以用一个XML文档来定义。
+* 通过POJO类的数据库映射文件，Hibernate可以理解持久化类(Java Class)和数据表(Table)之间的对应关系，也可以理解持久化类属性(field)与数据库表列(column)之间的对应关系。
+* 在运行时，Hibernate将根据这个映射文件来生成各种SQL语句。
+* 映射文件的扩展名为`.hbm.xml` (配置文件为`hibernate.cfg.xml`)。
+
+映射文件说明
+* hibernate-mapping:
+  * 类层次(class): 
+    * 主键: id
+    * 基础类型: property
+    * 实体引用类: many-to-one | one-to-one
+    * 集合: set | list | map | array
+      * one-to-many
+      * many-to-many
+    * 子类: subclass | joined-subclass
+    * 其他: component | any 等
+  * 查询语句(query): 用来放置查询语句，便于对数据库查询的统一管理和优化。 
+* 每个Hibernate-mapping中可以同时定义多个类. 但更推荐为每个类都创建一个单独的映射文件。
+
+### 9.1 `<hibernate-mapping>`
+`<hibernate-mapping>`是Hibernate映射文件的根元素
+* `schema`: 指定所映射的数据库schema的名称。若指定该属性, 则表明会为`<class>`自动添加该schema前缀。
+* `catalog`: 指定所映射的数据库catalog的名称。？
+* `default-cascade`(默认为 none): 设置hibernate默认的级联风格. 若配置Java属性, 集合映射时没有指定cascade属性, 则Hibernate将采用此处指定的级联风格.
+* `default-access`(默认为 property): 指定Hibernate的默认的属性访问策略。 默认值为property, 即使用getter, setter方法来访问属性. 若指定access, 则Hibernate会忽略getter/setter方法, 而通过反射访问成员变量.
+* `default-lazy`(默认为 true): 设置Hibernate morning的延迟加载策略. 该属性的默认值为true, 即启用延迟加载策略. 若配置Java属性映射, 集合映射时没有指定lazy属性, 则Hibernate 将采用此处指定的延迟加载策略
+* `auto-import` (默认为 true): 指定是否可以在查询语言中使用非全限定的类名（仅限于本映射文件中的类）。
+* `package` (可选): 指定一个包前缀，如果在映射文档中没有指定全限定的类名就使用这个作为包名.
+
+### 9.2 `<class>`
+`<class>`元素用于指定类和表的映射
+* `name`: 指定该持久化类映射的持久化类的类名
+* `table`: 指定该持久化类映射的表名, Hibernate默认以持久化类的类名作为表名
+* `dynamic-insert`: 若设置为true, 表示当保存一个对象时, 会动态生成INSERT语句, INSERT语句中仅包含所有取值不为null的字段. 默认值为false
+* `dynamic-update`: 若设置为true, 表示当更新一个对象时, 会动态生成UPDATE语句, UPDATE语句中仅包含所有取值需要更新的字段. 默认值为false
+* `select-before-update`: 设置Hibernate在更新某个持久化对象之前是否需要先执行一次查询. 默认值为false (若设置为true，则总会发出SELECT语句，会降低性能，不建议设置为true)
+* `batch-size`: 指定根据OID来抓取实例时每批抓取的实例数.
+* `lazy`: 指定是否使用延迟加载.
+* `mutable`: 若设置为true, 等价于所有的`<property>`元素的update属性为false, 表示整个实例不能被更新.默认为 true.
+* `discriminator-value`: 指定区分不同子类的值. 当使用<subclass/> 元素来定义持久化类的继承关系时需要使该属性。
+
+### 9.3 `<id>`
+设定持久化类的OID和表的主键的映射。
+
+**映射对象标识符(OID)**
+* Hibernate使用对象标识符(OID)来建立内存中的对象和数据库表中记录的对应关系. 对象的OID和数据表的主键对应. Hibernate通过标识符生成器来为主键赋值
+* Hibernate推荐在数据表中使用代理主键, 即不具备业务含义的字段. 代理主键通常为整数类型, 因为整数类型比字符串类型要节省更多的数据库空间.
+* 在对象-关系映射文件中, `<id>`元素用来设置对象标识符. `<generator>`子元素用来设定标识符生成器
+* Hibernate提供了标识符生成器接口: `IdentifierGenerator`, 并提供了各种内置实现
+
+`<id>`的一些property
+* `name`: 标识持久化类OID的属性名
+* `column`: 设置标识属性所映射的数据表的列名(主键字段的名字).
+* `unsaved-value`: 若设定了该属性, Hibernate会通过比较持久化类的OID值和该属性值来区分当前持久化类的对象是否为临时对象
+* `type`: 指定Hibernate映射类型. Hibernate映射类型是Java类型与SQL类型的桥梁. 如果没有为某个属性显式设定映射类型, 
+  Hibernate会运用反射机制先识别出持久化类的特定属性的Java类型, 然后自动使用与之对应的默认的Hibernate映射类型
+* Java的基本数据类型和包装类型对应相同的Hibernate映射类型. 基本数据类型无法表达null, 所以对于持久化类的OID推荐使用包装类型
+
+### 9.4 `<generator>`
+设定持久化类设定标识符生成器
+* `class`: 指定使用的标识符生成器全限定类名或其缩写名
+
+#### increment (`<generator class="increment"/>`)
+* `increament`标识符生成器由Hibernate以递增的方式为代理主键赋值。
+* Hibernate会先读取数据表中的主键的最大值，而接下来向数据表中插入记录时，就在`max(id)`的基础上递增，增量为1.
+* 适用范围：
+  * 由于`increment`生存标识符机制不依赖于底层数据库系统, 因此它适合所有的数据库系统
+  * 适用于只有单个Hibernate应用进程访问同一个数据库的场合, 在集群环境下不推荐使用它。存在并发问题，适合于测试的范围，不适合开发环境or具体的项目。
+  * OID 必须为long,int或short类型, 如果把OID定义为byte类型, 在运行时会抛出异常
+
+#### identity (`<generator class="identity"/>`)
+* `identity`标识符生成器由底层数据库来负责生成标识符, 它要求底层数据库把主键定义为自动增长字段类型
+* 适用范围：
+  * 由于`identity`生成标识符的机制依赖于底层数据库系统, 因此, 要求底层数据库系统必须支持自动增长字段类型. 支持自动增长字段类型的数据库包括: DB2, Mysql, MSSQLServer, Sybase 等
+  * OID 必须为long, int 或 short 类型, 如果把 OID 定义为 byte 类型,在运行时会抛出异常
+
+#### sequence (`<generator class="sequence"/>`)
+* `sequence`标识符生成器利用底层数据库提供的序列来生成标识符
+* Hibernate 在持久化一个 News 对象时, 先从底层数据库的news_seq序列中获得一个唯一的标识号, 再把它作为主键值
+* 适用范围:
+  * 由于 sequence 生成标识符的机制依赖于底层数据库系统的序列, 因此, 要求底层数据库系统必须支持序列. 支持序列的数据库包括: DB2, Oracle 等
+  * OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+
+#### hilo (`<generator class="hilo"/>`)
+* hilo 标识符生成器由 Hibernate 按照一种 high/low 算法生成标识符, 它从数据库的特定表的字段中获取 high 值.
+* Hibernate 在持久化一个 News 对象时, 由 Hibernate 负责生成主键值. hilo 标识符生成器在生成标识符时, 需要读取并修改 HI_TABLE 表中的 NEXT_VALUE 值.
+* 适用范围:
+  * 由于 hilo 生存标识符机制不依赖于底层数据库系统, 因此它适合所有的数据库系统
+  * OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+
+#### native (`<generator class="native"/>`)
+* `native`标识符生成器依据底层数据库对自动生成标识符的支持能力, 来选择使用 identity, sequence 或 hilo 标识符生成器
+* 适用范围:
+  * 由于 native 能根据底层数据库系统的类型, 自动选择合适的标识符生成器, 因此很适合于跨数据库平台开发
+  * OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+
+### 9.5 `property`
+* `name`: 指定该持久化类的属性的名字
+* `type`: 指定Hibernate映射类型. Hibernate映射类型是Java类型与SQL类型的桥梁. 如果没有为某个属性显式设定映射类型, Hibernate会运用反射机制先识别出持久化类的特定属性的Java类型, 然后自动使用与之对应的默认的Hibernate映射类型.
+* `column`: 指定与类的属性映射的表的字段名. 如果没有设置该属性, Hibernate将直接使用类的属性名作为字段名.
+* `not-null`: 若该属性值为true, 表明不允许为null, 默认为false
+* `access`: 指定Hibernate的默认的属性访问策略。 默认值为property, 即使用getter, setter方法来访问属性. 若指定field, 则Hibernate会忽略 getter/setter方法, 而通过反射访问成员变量
+* `unique`: 设置是否为该属性所映射的数据列添加唯一约束.
+* `index`: 指定一个字符串的索引名称. 当系统需要Hibernate自动建表时, 用于为该属性所映射的数据列创建索引, 从而加快该数据列的查询.
+* `length`: 指定该属性所映射数据列的字段的长度
+* `scale`: 指定该属性所映射数据列的小数位数, 对 double, float, decimal 等类型的数据列有效.
+* `formula`: 设置一个 SQL 表达式, Hibernate 将根据它来计算出派生属性的值.
+* `派生属性`: 并不是持久化类的所有属性都直接和表的字段匹配, 持久化类的有些属性的值必须在运行时通过计算才能得出来, 这种属性称为派生属性
+
+使用formulate属性时
+
+* `formula=“(sql)”` 的英文括号不能少
+* Sql 表达式中的列名和表名都应该和数据库对应, 而不是和持久化对象的属性对应
+* 如果需要在 formula 属性中使用参数, 这直接使用 where cur.id=id 形式, 其中 id 就是参数, 和当前持久化对象的 id 属性对应的列的 id 值将作为参数传入.
+
+### 9.6 Java类型，Hibernate映射类型，SQL类型之间的对应关系
+Refer to [尚硅谷.佟刚.Hibernate.pdf](尚硅谷.佟刚.Hibernate.pdf)
+
 ## Other Notes
 1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
