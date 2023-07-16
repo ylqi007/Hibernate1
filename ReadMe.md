@@ -340,8 +340,43 @@ Hibernate Configuration 文档连接: `hibernate-release-4.2.4.Final/documentati
 ### 9.6 Java类型，Hibernate映射类型，SQL类型之间的对应关系
 Refer to [尚硅谷.佟刚.Hibernate.pdf](尚硅谷.佟刚.Hibernate.pdf)
 
+
+## 10. 映射Java时间，日期类型
+### 10.1 基础知识
+* 在Java中, 代表时间和日期的类型包括: `java.util.Date`和`java.util.Calendar`. 
+  此外,在JDBC API中还提供了3个扩展了`java.util.Date`类的子类: `java.sql.Date`, `java.sql.Time`和 `java.sql.Timestamp`, 这三个类分别和标准SQL类型中的DATE, TIME 和 TIMESTAMP类型对应
+* 在标准SQL中, DATE类型表示日期, TIME类型表示时间, TIMESTAMP类型表示时间戳, 同时包含日期和时间信息.
+
+### 10.2 如何进行映射
+1. 因为`java.util.Date`是`java.sql.Date`, `java.sql.Time` and `java.sql.Timestamp`的父类，所以`java.util.Date`可以对应标准SQL中, DATE类型, TIME类型, 和TIMESTAMP类型.
+2. 基于1, 所以在设置持久化类的Date类型时，设置为`java.util.Date`
+3. 如何把`java.util.Date`映射为DATE，TIME和TIMESTAMP类型？
+    可以通过`<property>`的`type`属性来进行映射，例如
+    ```
+    <property name="date" type="date">
+        <column name="DATE"/>
+    </property>
+    <property name="date" type="time">
+        <column name="DATE"/>
+    </property>
+    <property name="date" type="timestamp">
+        <column name="DATE"/>
+    </property>
+    ```
+   其中，`data, time, timestamp`既不是Java类型，也不是标准SQL类型，而是Hibernate映射类型。
+
+[Hibernate 6.1: 2.1. Mapping types](https://docs.jboss.org/hibernate/orm/6.1/userguide/html_single/Hibernate_User_Guide.html#mapping-types)
+`java.util.Date`是deprecated date/time types。
+
+### 10.3 使用Hibernate内置映射类型
+以下情况必须显式指定Hibernate映射类型
+* 一个Java类型可能对应多个Hibernate映射类型. 例如: 如果持久化类的属性为`java.util.Date`类型, 对应的Hibernate映射类型可以是
+  `date`, `time` 或 `timestamp`. 此时必须根据对应的数据表的字段的SQL类型, 来确定Hibernate映射类型. 
+  如果字段为DATE类型, 那么Hibernate映射类型为date; 如果字段为TIME类型, 那么Hibernate映射类型为time; 如果字段为TIMESTATMP类型, 那么Hibernate映射类型为timestamp.
+
 ## Other Notes
-1. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
+1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
+2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
 2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
 3. [HIBERNATE -- Community Documentation, 4.2](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/)
 4. [Chapter 3. Configuration](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/#session-configuration)

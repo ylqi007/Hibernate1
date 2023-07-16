@@ -697,4 +697,71 @@ class News2Test {
         News2 news2 = new News2("AAA", "author=aaa", new Date());
         session.save(news2);
     }
+
+    /**
+     * cfg.xml:
+     *  <property name="hbm2ddl.auto">create</property>
+     * hbm.xml:
+     *  <property name="date" type="date">
+     *      <column name="DATE"/>
+     *  </property>
+     *
+     * DB中显式的Date为：2023-07-15，只有日期，没有时间
+     */
+    @Test
+    public void testDate() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        System.out.println("Before session.save(), news2=" + news2);    // news2=News{id=null, title='AAA', author='author=aaa', date=Sat Jul 15 18:45:32 PDT 2023}
+
+        session.save(news2);
+
+        System.out.println("After session.save(), news2=" + news2);     // news2=News{id=1, title='AAA', author='author=aaa', date=Sat Jul 15 18:45:32 PDT 2023}
+        System.out.println("news2.getDate()=" + news2.getDate());       // Sat Jul 15 18:45:32 PDT 2023
+        System.out.println("news2.getDate().getClass()=" + news2.getDate().getClass()); // java.util.Date
+    }
+
+    /**
+     * cfg.xml:
+     *  <property name="hbm2ddl.auto">create</property>
+     * hbm.xml:
+     *  <property name="date" type="time">
+     *      <column name="DATE"/>
+     *  </property>
+     *
+     * DB中显式的Date为：18:48:15，只有时间，没有日期
+     */
+    @Test
+    public void testTime() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        System.out.println("Before session.save(), news2=" + news2);    // news2=News{id=null, title='AAA', author='author=aaa', date=Sat Jul 15 18:48:15 PDT 2023}
+
+        session.save(news2);
+
+        System.out.println("After session.save(), news2=" + news2);     // news2=News{id=1, title='AAA', author='author=aaa', date=Sat Jul 15 18:48:15 PDT 2023}
+        System.out.println("news2.getDate()=" + news2.getDate());       // Sat Jul 15 18:48:15 PDT 2023
+        System.out.println("news2.getDate().getClass()=" + news2.getDate().getClass()); // java.util.Date
+    }
+
+    /**
+     * cfg.xml:
+     *  <property name="hbm2ddl.auto">create</property>
+     * hbm.xml:
+     *  <property name="date" type="timestamp">
+     *      <column name="DATE"/>
+     *  </property>
+     *
+     * DB中显式的Date为：2023-07-15 18:50:28，既有时间，也有日期
+     */
+    @Test
+    public void testTimestamp() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        System.out.println("Before session.save(), news2=" + news2);    // news2=News{id=null, title='AAA', author='author=aaa', date=Sat Jul 15 18:50:27 PDT 2023}
+
+        session.save(news2);
+
+        System.out.println("After session.save(), news2=" + news2);     // news2=News{id=1, title='AAA', author='author=aaa', date=Sat Jul 15 18:50:27 PDT 2023}
+        System.out.println("news2.getDate()=" + news2.getDate());       // Sat Jul 15 18:50:27 PDT 2023
+        System.out.println("news2.getDate().getClass()=" + news2.getDate().getClass()); // java.util.Date
+    }
+
 }
