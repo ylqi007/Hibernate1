@@ -38,5 +38,7 @@
         <mapping resource="com/atguigu/hibernate/helloworld/News.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/News2.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/Worker.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/helloworld/entities/nto1/Customer.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/helloworld/entities/nto1/Order.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>

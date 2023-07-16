@@ -413,10 +413,32 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   * `name`: 整体类在组件中的属性名
 
 
+## 13. 映射一对多关联关系
+* 在域模型中，类与类之间最普遍的关系就是**关联**关系
+* 在UML中，关联是有方向的：
+  * 以Customer和Order为例：一个Customer可以有多个订单，而一个订单只能属于一个Customer。从Order到Customer的关联是多对一关联；而从Customer到Order是一对多的关联。
+  * 单向关联
+  * 双向关联
+
+![](resources/Component_Mapping.png)
+
+### 13.1 单向n-1
+* 单向n-1关联只需要从n的一端可以访问1的一端
+* 域模型：从Order到Customer的多对一单向关联需要在Order类中定义一个Customer属性，而在Customer类中无需定义存放Order对象的属性集合。在Order中有对Customer的引用，而在Customer中不需要有对Order集合的引用。
+  ![](resources/Single_Direction_n_to_1.png)
+* 关系数据模型：ORDERS表中的CUSTOMER_ID参照CUSTOMER表中的主键
+  ![](resources/Single_Direction_n_to_1_Order_to_Customer.png)
+* 显然无法直接用`<property>`映射customer属性
+* Hibernate使用`<many-to-one>`元素来映射多对一关联关系
+
+* `<many-to-one>`元素来映射**组成关系**
+  * `name`: 设定待映射的持久化类的属性名，即`Order.customer`
+  * `column`: 设定和持久化类的属性对应的表的外键，即ORDERS table中的`CUSTOMER_ID`列
+  * `class`: 设定待映射的持久化类的属性的类型，即`Order.customer`的类型
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
-2. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
-3. [HIBERNATE -- Community Documentation, 4.2](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/)
-4. [Chapter 3. Configuration](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/#session-configuration)
+3. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
+4. [HIBERNATE -- Community Documentation, 4.2](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/)
+5. [Chapter 3. Configuration](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/#session-configuration)

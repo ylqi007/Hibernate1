@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.helloworld.entities.nto1">
+
+    <class name="Order" table="ORDERS">
+        <id name="orderId" type="java.lang.Integer">
+            <column name="ORDER_ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="orderName" type="java.lang.String">
+            <column name="ORDER_NAME"/>
+        </property>
+
+        <!-- 映射多对一的关联关系, 使用many-to-one来映射多对一的关联关系
+        name: “多”端关联的“一”端的属性名，也就是Order.customer
+        class: "一“端的属性对应的类命，也就是Order.customer对应的类，即Customer
+        column: “一”端在“多”端对应的数据表中的外键的名字。
+        此时CUSTOMER_ID就是ORDER table的外键
+        -->
+        <many-to-one name="customer" class="Customer" column="CUSTOMER_ID"/>
+    </class>
+
+</hibernate-mapping>
