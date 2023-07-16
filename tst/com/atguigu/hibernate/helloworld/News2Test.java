@@ -4,10 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
+
+import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.ObjectNotFoundException;
@@ -762,6 +769,54 @@ class News2Test {
         System.out.println("After session.save(), news2=" + news2);     // news2=News{id=1, title='AAA', author='author=aaa', date=Sat Jul 15 18:50:27 PDT 2023}
         System.out.println("news2.getDate()=" + news2.getDate());       // Sat Jul 15 18:50:27 PDT 2023
         System.out.println("news2.getDate().getClass()=" + news2.getDate().getClass()); // java.util.Date
+    }
+
+    /**
+     * 若content和image的映射类型为：
+     *  <property name="content" type="clob"></property>
+     *  <property name="image" type="blob"></property>
+     * 此时，MySQL DB中，content的Data Type是longtext，image的Data Type是longblob
+     *
+     * 如果想要更精准的映射content和image，则可以使用`sql-type`
+     *  <property name="content">
+     *      <column name="CONTENT" sql-type="mediumtext"/>
+     *  </property>
+     *  <property name="image">
+     *      <column name="IMAGE" sql-type="mediumblob"/>
+     *  </property>
+     * 此时，MySQL DB中，content的Data Type是mediumtext，image的Data Type是mediumblob
+     */
+    @Test
+    public void testInsertLargeObject() {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        System.out.println("Before session.save(), news2=" + news2);    // news2=News{id=null, title='AAA', author='author=aaa', date=Sat Jul 15 18:48:15 PDT 2023}
+
+        session.save(news2);
+    }
+
+    @Test
+    public void testBlobTypeSave() throws IOException {
+        News2 news2 = new News2("AAA", "author=aaa", new Date());
+        news2.setContent("CONTENT~!~");
+
+        InputStream inputStream = new FileInputStream("tree-736885_1280.jpg");
+        Blob image = Hibernate.getLobCreator(session).createBlob(inputStream, inputStream.available());
+        news2.setImage(image);
+        session.save(news2);
+    }
+
+    /**
+     * <property name="hbm2ddl.auto">update</property>
+     * @throws IOException
+     *
+     * 实际应用中通常会保存image path，而不是image directly
+     */
+    @Test
+    public void testBlobTypeGet() throws IOException, SQLException {
+        News2 news2 = (News2) session.get(News2.class, 1);
+        Blob image = news2.getImage();
+        InputStream inputStream = image.getBinaryStream();
+        System.out.println(inputStream.available());    // 185491, Size of image "tree-736885_1280.jpg" is 185,491 bytes (188 KB on disk)
     }
 
 }

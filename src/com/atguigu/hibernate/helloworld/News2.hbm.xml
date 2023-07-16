@@ -22,6 +22,17 @@
         <property name="date" type="java.util.Date">
             <column name="DATE"/>
         </property>
+
+        <!--映射大对象-->
+        <!--若希望精确映射SQL类型，可以使用sql-type属性-->
+        <!--<property name="content" type="clob"></property>-->
+        <!--<property name="image" type="blob"></property>-->
+        <property name="content">
+            <column name="CONTENT" sql-type="mediumtext"/>
+        </property>
+        <property name="image">
+            <column name="IMAGE" sql-type="mediumblob"/>
+        </property>
     </class>
 
 </hibernate-mapping>

@@ -374,6 +374,16 @@ Refer to [尚硅谷.佟刚.Hibernate.pdf](尚硅谷.佟刚.Hibernate.pdf)
   `date`, `time` 或 `timestamp`. 此时必须根据对应的数据表的字段的SQL类型, 来确定Hibernate映射类型. 
   如果字段为DATE类型, 那么Hibernate映射类型为date; 如果字段为TIME类型, 那么Hibernate映射类型为time; 如果字段为TIMESTATMP类型, 那么Hibernate映射类型为timestamp.
 
+
+## 11. Java大对象类型的Hibernate映射
+* 在Java中, `java.lang.String`可用于表示长字符串(长度超过255), 字节数组`byte[]`可用于存放图片或文件的二进制数据. 
+  此外, 在JDBC API中还提供了`java.sql.Clob`和`java.sql.Blob`类型, 它们分别和标准SQL中的CLOB 和 BLOB类型对应. 
+  CLOB表示字符串大对象(Character Large Object), BLOB表示二进制对象(Binary Large Object)
+* MySQL不支持标准SQ 的CLOB类型, 在MySQL中, 用 TEXT, MEDIUMTEXT 及 LONGTEXT 类型来表示长度操作255的长文本数据
+* 在持久化类中, 二进制大对象可以声明为`byte[]`或`java.sql.Blob`类型; 字符串可以声明为`java.lang.String`或`java.sql.Clob`
+* 实际上在Java应用程序中处理长度超过255的字符串, 使用`java.lang.String`比`java.sql.Clob`更方便
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

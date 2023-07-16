@@ -3,6 +3,7 @@ package com.atguigu.hibernate.helloworld;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.sql.Blob;
 import java.util.Date;
 
 @Getter
@@ -12,6 +13,8 @@ public class News2 {
     private String title;
     private String author;
     private Date date;
+    private String content; // 大文本
+    private Blob image;     // 二进制数据
 
     public News2() {}
 
@@ -23,11 +26,13 @@ public class News2 {
 
     @Override
     public String toString() {
-        return "News{" +
+        return "News2{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", author='" + author + '\'' +
                 ", date=" + date +
+                ", content='" + content + '\'' +
+                ", image=" + image +
                 '}';
     }
 }
