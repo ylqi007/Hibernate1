@@ -37,5 +37,6 @@
         <!-- 3. 指定关联的hbm.xml文件，注意是目录结构，而不是包结构 -->
         <mapping resource="com/atguigu/hibernate/helloworld/News.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/News2.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/helloworld/Worker.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>

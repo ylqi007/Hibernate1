@@ -384,6 +384,36 @@ Refer to [尚硅谷.佟刚.Hibernate.pdf](尚硅谷.佟刚.Hibernate.pdf)
 * 实际上在Java应用程序中处理长度超过255的字符串, 使用`java.lang.String`比`java.sql.Clob`更方便
 
 
+## 12. 映射组成关系
+建立域模型和关系数据模型有着不同的出发点：
+* 域模型：由程序代码组成，通过细化持久化类的粒度可提高代码的可重用性，简化编程。
+* 在没有数据冗余的情况下，应该尽可能减少表的数目，简化表之间的参照关系，以便提高数据的访问速度。
+
+Hibernate把持久化类的属性分为两种：
+1. 值(value)类型：没有OID，不能被单独持久化，生命周期依赖于所属的持久化类的对象的生命周期。比如`Pay`
+2. 实体(entity)类型：有OID，可以被单独持久化，有独立的生命周期。比如`Worker`
+
+![](resources/Worker_Pay.png)
+
+<code style="color : red">Note</code>: **映射“组成”关系指的是值类型**，而不是实体类型。
+
+Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属性是Worker类的一个组成部分，在Hibernate中称为之为组件
+```xml
+<component name="pay" class="Pay">
+    <parent name="worker"/>
+
+    <property name="monthlyPay" column="MONTHLY_PAY" type="integer"/>
+    <property name="vocationWithPay" column="VOCATION_WITH_PAY" type="integer"/>
+    <property name="yearPay" column="YEAT_PAY" type="integer"/>
+</component>
+```
+* `<component>`元素来映射组成关系
+  * `class`: 设定组成关系属性的类型，此处表明pay的属性为`Pay`类型
+* `<parent>`元素指定组件所属的整体类
+  * `name`: 整体类在组件中的属性名
+
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
