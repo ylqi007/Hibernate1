@@ -419,22 +419,75 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   * 以Customer和Order为例：一个Customer可以有多个订单，而一个订单只能属于一个Customer。从Order到Customer的关联是多对一关联；而从Customer到Order是一对多的关联。
   * 单向关联
   * 双向关联
-
-![](resources/Component_Mapping.png)
+  * ![](resources/Component_Mapping.png)
 
 ### 13.1 单向n-1
-* 单向n-1关联只需要从n的一端可以访问1的一端
+* 单向n-1关联(即n-->1)只需要从n的一端可以访问1的一端(即从Order对象可以访问Customer对象)
 * 域模型：从Order到Customer的多对一单向关联需要在Order类中定义一个Customer属性，而在Customer类中无需定义存放Order对象的属性集合。在Order中有对Customer的引用，而在Customer中不需要有对Order集合的引用。
   ![](resources/Single_Direction_n_to_1.png)
 * 关系数据模型：ORDERS表中的CUSTOMER_ID参照CUSTOMER表中的主键
   ![](resources/Single_Direction_n_to_1_Order_to_Customer.png)
+    * `CUSTOMER_ID`是CUSTOMERS table的主键
+    * `CUSTOMER_ID`是ORDERS table的外键
 * 显然无法直接用`<property>`映射customer属性
 * Hibernate使用`<many-to-one>`元素来映射多对一关联关系
-
+  ```xml
+  <many-to-one name="customer" class="Customer" column="CUSTOMER_ID" not-null="true"/>
+  ```
 * `<many-to-one>`元素来映射**组成关系**
   * `name`: 设定待映射的持久化类的属性名，即`Order.customer`
   * `column`: 设定和持久化类的属性对应的表的外键，即ORDERS table中的`CUSTOMER_ID`列
   * `class`: 设定待映射的持久化类的属性的类型，即`Order.customer`的类型
+
+### 13.2 双向1-n
+* 双向1-n与双向n-1是完全相同的两个情形
+* 双向1-n需要从“1”端可以访问“n“端(即Order-->Customer)，反之亦然
+* 域模型：从Order到Customer的多对一双向关联需要在Order类中定义一个Customer属性，而在Customer类中需定义存放Order对象的集合属性。
+  ![](resources/Bi_Direction_n_to_1.png)
+* 关系数据模型：ORDERS表中的CUSTOMER_ID参照CUSTOMER表中的主键
+  ![](resources/Single_Direction_n_to_1_Order_to_Customer.png)
+    * `CUSTOMER_ID`是CUSTOMERS table的主键
+    * `CUSTOMER_ID`是ORDERS table的外键
+* 当Session从数据库中加载Java集合时，创建的是**Hibernate内置的集合类**的实例，因此**在持久化类中定义集合属性时必须把属性声明为Java接口类型**。
+  * Hibernate的内置集合类具有集合代理功能，**支持延迟加载策略**。
+  * 事实上，Hibernate的内置集合类封装了JDK的集合类，这使得Hibernate能够对缓存中的集合对象进行脏检查，按照集合对象的状态来同步更新数据库。
+* 在定义集合属性时，通常把它初始化为集合实现类的一个实例。这样可以提高程序的健壮性，避免应用程序访问取值为null的集合的方法抛出`NullPointerException`
+  ```java
+  private Set<Order> orders = new HashSet<>();
+  
+  public Set<Order> getOrders() {
+    return orders;
+  }
+
+  public void setOrders(Set<Orders> orders) {
+    this.orders = orders;
+  }
+  ```
+* Hibernate使用`<set>`元素来映射Set类型的属性
+  ```java
+  <set name="orders"  table="ORDERS">
+    <key column="CUSTOMER_ID"/>
+    <one-to-many class="Order">
+  </set>
+  ```
+  * `name`: 设定待映射的持久化类的属性的
+  * `key`: 设定与所关联的持久化类对应的表的外键，即table ORDERS的CUSTOMER_ID列
+  * `column`: 指定关联表的外键名
+* `<one-to-many>` 设定集合属性中所关联的持久化类
+  ```xml
+  <many-to-one name="customer" class="Customer" column="CUSTOMER_ID"/>
+  ```
+  * `class`: 指定关联的持久化类的类名，即Order class
+
+
+`<set>`元素的`inverse`属性
+* 在Hibernate中通过设置`inverse`属性来决定由双向关联时，由哪一方来维护表和表之间的关系。`inverse=false`的为主动方，`inverse=true`的为被动方。由主动方负责维护关联关系。
+* 在没有设置`inverse=true`的情况下，父子两边都会维持父子关系
+* 在1-n关系中，将n方设为主动方有助于性能改善(比如，要公司老板记住每个员工的名字是不太可能的，但是让每个员工都记住老板名字就容易的多)
+* 在1-n关系中，若将1端设置为主动方
+  * 会额外多出UPDATE语句
+  * 插入数据时无法同时插入外键列，因而无法外键列添加非空约束
+
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
@@ -442,3 +495,4 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
 3. [How do I fix: "...error in your SQL syntax; check the manual for the right syntax"](https://stackoverflow.com/questions/16408334/how-do-i-fix-error-in-your-sql-syntax-check-the-manual-for-the-right-synta)
 4. [HIBERNATE -- Community Documentation, 4.2](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/)
 5. [Chapter 3. Configuration](https://docs.jboss.org/hibernate/orm/4.2/manual/en-US/html_single/#session-configuration)
+6. [Hibernate and JPA error: duplicate import on dependent Maven project](https://stackoverflow.com/questions/25221495/hibernate-and-jpa-error-duplicate-import-on-dependent-maven-project)

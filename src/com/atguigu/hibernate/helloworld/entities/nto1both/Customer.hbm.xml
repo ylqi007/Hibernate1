@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.helloworld.entities.nto1both" auto-import="false">
+
+    <class name="Customer" table="CUSTOMERS2">
+        <id name="customerId" type="java.lang.Integer">
+            <column name="CUSTOMER_ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="customerName" type="java.lang.String">
+            <column name="CUSTOMER_NAME"/>
+        </property>
+
+        <!--映射一对多的集合属性-->
+        <!--设置inverse="true"，使1端放弃维护关联关系，从而减少UPDATE语句-->
+        <!--
+            set: 映射Set类型的属性
+            table: Set集合中的元素对应的记录应该存放在哪个表中，该值需要和多端的表的名字一致，i.e. ORDERS2
+        -->
+        <set name="orders" table="ORDERS2" inverse="true">
+            <key column="CUSTOMER_ID"/> <!-- key是多端表中的外键列的名字-->
+            <one-to-many class="Order"/> <!-- 指定映射类型 one-to-many -->
+        </set>
+
+    </class>
+
+</hibernate-mapping>
