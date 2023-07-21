@@ -480,7 +480,7 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   * `class`: 指定关联的持久化类的类名，即Order class
 
 
-`<set>`元素的`inverse`属性
+#### `<set>`元素的`inverse`属性
 * 在Hibernate中通过设置`inverse`属性来决定由双向关联时，由哪一方来维护表和表之间的关系。`inverse=false`的为主动方，`inverse=true`的为被动方。由主动方负责维护关联关系。
 * 在没有设置`inverse=true`的情况下，父子两边都会维持父子关系
 * 在1-n关系中，将n方设为主动方有助于性能改善(比如，要公司老板记住每个员工的名字是不太可能的，但是让每个员工都记住老板名字就容易的多)
@@ -488,6 +488,27 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   * 会额外多出UPDATE语句
   * 插入数据时无法同时插入外键列，因而无法外键列添加非空约束
 
+#### `cascade`属性
+在对象-关系映射文件(hbm.xml)文件中，用于映射持久化类之间的关系的元素，`<set>, <many-to-one>, <one-to-many>`都有一个`cascade`属性，它用于指定如何操纵与当前对象关联的其他对象。
+
+| cascade属性         | 描述                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| none              | 当Session操作当前对象时，忽略其他关联的对象。这是cascade属性的默认值                                                 |
+| save-update       | 当通过Session的save(), update()以及saveOrUpdate()方法来保存或更新当前对象时，级联保存所有关联的新建的临时对象，并且级联更新所有关联的游离对象 |
+| delete            | 当通过Session的delete()方法来删除当前对象时，会级联删除所有关联的对象                                                |
+| all               | 包含save-update, persist, merge, delete, lock, replicate, evict以及refresh的行为                 |
+| delete-orphan     | 删除所有和当前对象解除关联关系的对象                                                                        |
+| all-delete-orphan | 包含all和delete-orphan的行为                                                                    |
+
+#### 在数据库中对集合排序
+* `<ser>`元素有一个`order-by`属性，如果设置了该属性，当Hibernate通过SELECT语句从数据库中检索集合对象时，会使用ORDER BY子句进行排序
+* `order-by`属性还可以加入SQL函数
+  ```xml
+  <set name="orders" inverse="true" cascase="save-update" order-by="ORDER_DATE">
+    <key column="CUSTOMER_ID" />
+    <one-to-many class="Order" />
+  </set>
+  ```
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)

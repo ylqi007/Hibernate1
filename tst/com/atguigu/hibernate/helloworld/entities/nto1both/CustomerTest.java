@@ -311,4 +311,195 @@ class CustomerTest {
         customer.getOrders().iterator().next().setOrderName("GG~~");
     }
 
+    /**
+     * Without cascade="delete"
+     * Caused by: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException: Cannot delete or update a parent row: a foreign key constraint fails (`hibernate5`.`orders2`, CONSTRAINT `FK_silhd0tqx04fmm7jxppy6hn27` FOREIGN KEY (`CUSTOMER_ID`) REFERENCES `customers2` (`CUSTOMER_ID`))
+     * 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+     * 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+     * 	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+     * 	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:490)
+     *
+     *
+     * With cascade="delete"
+     * Hibernate:
+     *     select
+     *         customer0_.CUSTOMER_ID as CUSTOMER1_1_0_,
+     *         customer0_.CUSTOMER_NAME as CUSTOMER2_1_0_
+     *     from
+     *         CUSTOMERS2 customer0_
+     *     where
+     *         customer0_.CUSTOMER_ID=?
+     * Hibernate:
+     *     select
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_1_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_0_,
+     *         orders0_.ORDER_NAME as ORDER_NA2_5_0_,
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_5_0_
+     *     from
+     *         ORDERS2 orders0_
+     *     where
+     *         orders0_.CUSTOMER_ID=?
+     * Hibernate:
+     *     delete
+     *     from
+     *         ORDERS2
+     *     where
+     *         ORDER_ID=?
+     * Hibernate:
+     *     delete
+     *     from
+     *         ORDERS2
+     *     where
+     *         ORDER_ID=?
+     * Hibernate:
+     *     delete
+     *     from
+     *         CUSTOMERS2
+     *     where
+     *         CUSTOMER_ID=?
+     */
+    @Test
+    public void testDeleteWithoutCascade() {
+        Customer customer = (Customer) session.get(Customer.class, 1);
+        session.delete(customer);
+    }
+
+    /**
+     * Without cascade="delete-orphan"
+     *  Hibernate:
+     *     select
+     *         customer0_.CUSTOMER_ID as CUSTOMER1_1_0_,
+     *         customer0_.CUSTOMER_NAME as CUSTOMER2_1_0_
+     *     from
+     *         CUSTOMERS2 customer0_
+     *     where
+     *         customer0_.CUSTOMER_ID=?
+     *
+     * 只有SELECT操作
+     *
+     *
+     * With cascade="delete-orphan"
+     *
+     * Hibernate:
+     *     select
+     *         customer0_.CUSTOMER_ID as CUSTOMER1_1_0_,
+     *         customer0_.CUSTOMER_NAME as CUSTOMER2_1_0_
+     *     from
+     *         CUSTOMERS2 customer0_
+     *     where
+     *         customer0_.CUSTOMER_ID=?
+     * Hibernate:
+     *     select
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_1_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_0_,
+     *         orders0_.ORDER_NAME as ORDER_NA2_5_0_,
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_5_0_
+     *     from
+     *         ORDERS2 orders0_
+     *     where
+     *         orders0_.CUSTOMER_ID=?
+     * Hibernate:
+     *     delete
+     *     from
+     *         ORDERS2
+     *     where
+     *         ORDER_ID=?
+     * Hibernate:
+     *     delete
+     *     from
+     *         ORDERS2
+     *     where
+     *         ORDER_ID=?
+     *
+     * Customer没有删除，但是Orders被删除了
+     */
+    @Test
+    public void testDeleteCascadeDeleteOrphan() {
+        Customer customer = (Customer) session.get(Customer.class, 2);
+        customer.getOrders().clear();
+    }
+
+    /**
+     * With cascade="save-update"
+     *
+     * Hibernate:
+     *     insert
+     *     into
+     *         CUSTOMERS2
+     *         (CUSTOMER_NAME)
+     *     values
+     *         (?)
+     * Hibernate:
+     *     insert
+     *     into
+     *         ORDERS2
+     *         (ORDER_NAME, CUSTOMER_ID)
+     *     values
+     *         (?, ?)
+     * Hibernate:
+     *     insert
+     *     into
+     *         ORDERS2
+     *         (ORDER_NAME, CUSTOMER_ID)
+     *     values
+     *         (?, ?)
+     */
+    @Test
+    public void testCascadeSaveUpdate() {
+        Customer customer = new Customer();
+        customer.setCustomerName("AA");
+
+        Order order1 = new Order();
+        order1.setOrderName("Order-AA1");
+
+        Order order2 = new Order();
+        order2.setOrderName("Order-AA2");
+
+        // 设定关联关系
+        order1.setCustomer(customer);
+        order2.setCustomer(customer);
+        customer.getOrders().add(order1);
+        customer.getOrders().add(order2);
+
+        // 执行save操作：先出入customer (一端)，再插入orders (多端)
+        session.save(customer);
+        // 即使没有session.save(order)，orders也可以被保存到DB
+    }
+
+    /**
+     * With order-by="ORDER_NAME DESC"
+     *
+     * Hibernate:
+     *     select
+     *         customer0_.CUSTOMER_ID as CUSTOMER1_1_0_,
+     *         customer0_.CUSTOMER_NAME as CUSTOMER2_1_0_
+     *     from
+     *         CUSTOMERS2 customer0_
+     *     where
+     *         customer0_.CUSTOMER_ID=?
+     * BB
+     * Hibernate:
+     *     select
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_1_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_1_,
+     *         orders0_.ORDER_ID as ORDER_ID1_5_0_,
+     *         orders0_.ORDER_NAME as ORDER_NA2_5_0_,
+     *         orders0_.CUSTOMER_ID as CUSTOMER3_5_0_
+     *     from
+     *         ORDERS2 orders0_
+     *     where
+     *         orders0_.CUSTOMER_ID=?
+     *     order by
+     *         orders0_.ORDER_NAME desc
+     */
+    @Test
+    public void testSetOrderBy() {
+        Customer customer = (Customer) session.get(Customer.class, 2);
+        System.out.println(customer.getCustomerName());
+
+        System.out.println(customer.getOrders().size());
+    }
+
 }

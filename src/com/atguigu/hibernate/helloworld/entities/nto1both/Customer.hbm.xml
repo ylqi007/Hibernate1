@@ -20,8 +20,14 @@
         <!--
             set: 映射Set类型的属性
             table: Set集合中的元素对应的记录应该存放在哪个表中，该值需要和多端的表的名字一致，i.e. ORDERS2
+            inverse: 指定由哪一方维护关联关系，通常设置为true，以指定由多的一端维护关联关系
+            cascade: 设定级联操作。开发时不建议设定该属性，建议使用手工的方式来处理。
+                * cascade="delete": 级联删除。当删除1的一端时，也删除n的一端
+                * cascade="delete-orphan": 删除所有和当前对象解除关系的对象
+                * cascade="save-update": 当通过Session的save(), update()及saveOrUpdate()方法来保存或更新当前对象时，级联保存所有关联的新建的临时对象，并且级联更新所有关联的游离对象。
+            order-by="ORDER_NAME DESC" : 在查询时，对集合中元素进行排序。其中ORDER_NAME是列名，而不是持久化类的属性名。
         -->
-        <set name="orders" table="ORDERS2" inverse="true">
+        <set name="orders" table="ORDERS2" inverse="true" order-by="ORDER_NAME DESC">
             <key column="CUSTOMER_ID"/> <!-- key是多端表中的外键列的名字-->
             <one-to-many class="Order"/> <!-- 指定映射类型 one-to-many -->
         </set>
