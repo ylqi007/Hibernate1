@@ -520,6 +520,7 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
     * 为Departments table的外键(即departments.manager_id)添加UNIQUE约束
     * deparments.manager_id (departments的外键) --> managers.manager_id (managers的主键)
   * 主键 
+    * 此时Departments表没有`MANAGER_ID`这一列，两张表使用主键相互对应。
 
 ### 14.1 基于外键映射的1-1
 * 对于基于外键的1-1关联，其外键可以存放在**任意**一边，在需要存放外键的一端，增加`<many-to-one>`元素。为`<many-to-one>`元素添加`unique=“true“`属性来表示为1-1关联
@@ -571,8 +572,26 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
 ![](resources/1-1_both.foreign.key.png)
 上图的例子中，`MGR_AA` --> `DEPT_AA`, `DEPT_AA` --> `GRB_BB`, 此时总的关系为 `MGR_AA --> DEPT_AA --> MGR_BB`, 也就无法形成 `MGR_AA <--> DEPT_AA`的双向1-1关系。
 
-:warning:<span style="color: red">注意</span>：所以不能在两边都使用外键！
+:warning:<span style="color:red">注意</span>：所以不能在两边都使用外键！
 
+
+### 14.2 基于主键映射的1-1
+* 基于主键的映射策略：指一端(即Departments表)的主键生成器使用foreign策略，表明根据“对方”(即Managers表)的主键来生成自己的主键，自己并不能独立生存主键。`<param>`子元素指定使用当前持久化类的哪个属性作为“对方”
+  ```xml
+  <id name="deptId" type="java.lang.Integer">
+      <column name="DEPT_ID"/>
+      <!-- 使用外键的方式生成当前的主键。-->
+      <generator class="foreign">
+          <!-- property 属性指定使用当前持久化类的哪一个属性的主键作为外键 -->
+          <param name="property">manager</param>  <!-- 即参照Department.manager field对应的持久化类的主键 -->
+      </generator>
+  </id>
+  ```
+* 采用foreign主键生成器策略的一端增加`<ont-to-one>`元素映射关联属性，其`<one-to-one>`属性还应增加`constrained="true"`属性；另一段增加`one-to-one`元素映射关联属性。
+* `constrained`(约束): 指定为当前持久化类对应的数据库表的主键添加一个外键约束，引用被关联的对象("对方")所对应的数据库表主键
+  ```xml
+  <one-to-one name="manager" class="Manager" constrained="true"/>
+  ```
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
