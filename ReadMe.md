@@ -510,6 +510,70 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   </set>
   ```
 
+
+## 14. 映射1-1关联关系
+![](resources/1-1.png)
+* 域模型
+  * Department和Manager 一一对应
+* 关系数据模型
+  * 按照外键映射
+    * 为Departments table的外键(即departments.manager_id)添加UNIQUE约束
+    * deparments.manager_id (departments的外键) --> managers.manager_id (managers的主键)
+  * 主键 
+
+### 14.1 基于外键映射的1-1
+* 对于基于外键的1-1关联，其外键可以存放在**任意**一边，在需要存放外键的一端，增加`<many-to-one>`元素。为`<many-to-one>`元素添加`unique=“true“`属性来表示为1-1关联
+  ```xml
+  <!-- Department.hbm.xml, 即<many-to-one>元素是在Department.hbm.xml中 -->
+  <many-to-one name="manager" class="Manager" column="MANAGER_ID" cascade="all" unique="true">
+  ```
+  * 为便于理解和记忆，可将`<many-to-one>`理解为 many Departments 对应 one Manager
+* 另一端需要使用`one-to-one`元素，该元素使用`property-ref`属性指定使用被关联实体主键以外的字段作为关联字段。
+  ```xml
+  <!-- Manager.hbm.xml, 即<one-to-one>元素是在Manager.hbm.xml中 -->
+  <one-to-one name="dept" class="Department" property-ref="manager">
+  ```
+  * 为了便于理解和记忆，可将`<one-to-one>`理解为 one Manager 对应 one Department
+  * 不使用`property-ref`属性时，Hibernate发出的SQL语句
+    ```
+    select
+        manager0_.MGR_ID as MGR_ID1_3_1_,
+        manager0_.MGR_NAME as MGR_NAME2_3_1_,
+        department1_.DEPT_ID as DEPT_ID1_2_0_,
+        department1_.DEPT_NAME as DEPT_NAM2_2_0_,
+        department1_.MANAGER_ID as MANAGER_3_2_0_
+    from
+        MANAGERS manager0_
+    left outer join
+        DEPARTMENTS department1_
+            on manager0_.MGR_ID=department1_.DEPT_ID     # 此处连接条件有问题，应该是managers.MGR_ID = departments.MGR_ID
+    where
+        manager0_.MGR_ID=?
+    ```
+  * 使用`property-ref`属性时，Hibernate发出的SQL语句
+    ```
+    select
+        manager0_.MGR_ID as MGR_ID1_3_1_,
+        manager0_.MGR_NAME as MGR_NAME2_3_1_,
+        department1_.DEPT_ID as DEPT_ID1_2_0_,
+        department1_.DEPT_NAME as DEPT_NAM2_2_0_,
+        department1_.MANAGER_ID as MANAGER_3_2_0_
+    from
+        MANAGERS manager0_
+    left outer join
+        DEPARTMENTS department1_
+            on manager0_.MGR_ID=department1_.MANAGER_ID      # 此时的连接条件才是正确的
+    where
+        manager0_.MGR_ID=?
+    ```
+
+#### 两边都使用外键映射的1-1
+![](resources/1-1_both.foreign.key.png)
+上图的例子中，`MGR_AA` --> `DEPT_AA`, `DEPT_AA` --> `GRB_BB`, 此时总的关系为 `MGR_AA --> DEPT_AA --> MGR_BB`, 也就无法形成 `MGR_AA <--> DEPT_AA`的双向1-1关系。
+
+:warning:<span style="color: red">注意</span>：所以不能在两边都使用外键！
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.helloworld.entities.one2one.foreign">
+
+    <class name="Department" table="DEPARTMENTS">
+
+        <id name="deptId" type="java.lang.Integer">
+            <column name="DEPT_ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="deptName" type="java.lang.String">
+            <column name="DEPT_NAME"/>
+        </property>
+
+        <!--使用many-to-one的方式来映射1-1关联关系。使用many-to-one可以在DEPARTMENTS table中生成外键-->
+        <many-to-one name="manager" class="Manager" column="MANAGER_ID" unique="true"/>
+
+    </class>
+
+</hibernate-mapping>

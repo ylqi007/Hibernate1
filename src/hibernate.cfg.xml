@@ -42,5 +42,7 @@
         <mapping resource="com/atguigu/hibernate/helloworld/entities/nto1/Order.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/entities/nto1both/Customer.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/entities/nto1both/Order.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/helloworld/entities/one2one/foreign/Manager.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/helloworld/entities/one2one/foreign/Department.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>
