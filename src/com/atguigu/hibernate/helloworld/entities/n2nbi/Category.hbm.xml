@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.helloworld.entities.n2nbi" auto-import="false">
+
+    <class name="Category" table="Categories">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+
+        <!--
+        table: 指定中间表
+        -->
+        <set name="items" table="CATEGORIES_ITEMS">
+            <key>
+                <column name="C_ID"/>       <!-- key 的column指定的是本持久化类(Category)在连接表中对应的外键列名 -->
+            </key>
+            <!--
+            使用many-to-many指定多对多的关联关系
+            column执行Set集合中的持久化类(即Item)在中间表的外键列的名称
+            -->
+            <many-to-many class="Item" column="I_ID"/>  <!-- many-to-many 的column指定的是Set集合中对象(Item)在连接表中对应的外键列名 -->
+        </set>
+    </class>
+
+</hibernate-mapping>

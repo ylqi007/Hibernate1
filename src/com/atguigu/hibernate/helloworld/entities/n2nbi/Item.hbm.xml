@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.helloworld.entities.n2nbi" auto-import="false">
+
+    <class name="Item" table="ITEMS">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+
+        <set name="categories" table="CATEGORIES_ITEMS" inverse="true">
+            <key column="I_ID"/>
+            <many-to-many class="Category" column="C_ID"/>
+        </set>
+    </class>
+
+</hibernate-mapping>

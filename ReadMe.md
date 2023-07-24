@@ -572,7 +572,7 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
 ![](resources/1-1_both.foreign.key.png)
 上图的例子中，`MGR_AA` --> `DEPT_AA`, `DEPT_AA` --> `GRB_BB`, 此时总的关系为 `MGR_AA --> DEPT_AA --> MGR_BB`, 也就无法形成 `MGR_AA <--> DEPT_AA`的双向1-1关系。
 
-:warning:<span style="color:red">注意</span>：所以不能在两边都使用外键！
+:warning:注意：所以不能在两边都使用外键！
 
 
 ### 14.2 基于主键映射的1-1
@@ -592,6 +592,51 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
   ```xml
   <one-to-one name="manager" class="Manager" constrained="true"/>
   ```
+
+
+## 15. 映射多对多关联关系
+### 15.1 单向n-n
+![](resources/n-n_single.png)
+* 域模型：只有一端有`Set`属性(即 n的一端)
+* 关系数据模型
+  * 需要一张中间表维持关联关系，即CATEGORIES_ITEMS表。其中CATEGORY_ID和ITEM_ID都是外键，两者共同作为主键。
+
+* n-n 的关联必须使用连接表
+* 与1-n映射类似，必须为Set集合元素添加key子元素(此时，两端的持久化类都要有Set集合元素)，指定CATEGORIES_ITEMS表中参照CATEGORIES表的外键为CATEGORIY_ID. 与1-n关联映射不同的是，建立n-n关联时, 集合中的元素使用many-to-many. manyto-many子元素的class属性指定items集合中存放的是Item对象, column属性指定CATEGORIES_ITEMS表
+中参照ITEMS表的外键为ITEM_ID
+
+### 15.2 双向n-n
+![](resources/n-n_bi.direction.png)
+* 域模型
+* 关系数据模型
+
+* 双向n-n关联**需要两端都使用集合属性**
+* 双向n-n关联**必须使用连接表**
+* 集合属性应增加`<key>`子元素用以映射外键列，集合元素里还应该增加`<many-to-many>`子元素关联实体类
+* 在双向n-n关联的两边都需要指定链接表的表名及外键列的列名。两个集合元素`<set>`的`table`元素的值必须指定，而且必须相同。`<set>`元素的两个子元素: `<key>`和`<many-to-many>`都必须指定`column`属性，其中，`key`和`many-to-many`分别指定本持久化类和关联类在连接表中的外键列名，因此两边的`key`和`many-to-many`的`column`属性交叉相同。也就是说，一边的`<set>`元素的`key`的`cloumn`值为a, `many-to-many`的`column` 为b；则另一边的`<set>`元素的`key`的 `column`值b, `many-to-many`的`column`值为 a.
+  ![](resources/n-n_many-2-many.png)
+  ```xml 
+  <!-- Category.hbm.xml -->
+  <set name="items" table="CATEGORIES_ITEMS">
+    <key>
+        <column name="C_ID"/>
+    </key>
+    <!--
+    使用many-to-many指定多对多的关联关系
+    column执行Set集合中的持久化类(即Item)在中间表的外键列的名称
+    -->
+    <many-to-many class="Item" column="I_ID"/>
+  </set>
+
+  <!-- Item.hbm.xml -->
+  <set name="categories" table="CATEGORIES_ITEMS" inverse="true">
+    <key column="I_ID"/>
+    <many-to-many class="Category" column="C_ID"/>
+  </set>
+  ```
+* 对于双向n-n关联，必须把其中一端的`inverse`属性设置为`true`, 否则两端都要维护关联关系，可能导致造成主键冲突。比如`Item.hbm.xml`中的`<set>`元素。
+
+
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
