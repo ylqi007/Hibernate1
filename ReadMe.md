@@ -637,6 +637,49 @@ Hibernate使用`<component>`元素来映射组成关系，该元素表名pay属�
 * 对于双向n-n关联，必须把其中一端的`inverse`属性设置为`true`, 否则两端都要维护关联关系，可能导致造成主键冲突。比如`Item.hbm.xml`中的`<set>`元素。
 
 
+## 16. 映射继承关系
+对于面向对象的程序设计语言而言， **继承**和**多态**是两个最基本的概念。**Hibernate的继承映射可以理解持久化类之间的继承关系**。例如: 人和学生之间的关系。学生继承了人，可以认为学生是一个特殊的人。如果对人进行查询，学生的实例也将被得到。
+![](resources/Extends_Person.Student.png)
+
+Hibernate支持三种继承映射策略：
+1. 使用`subclass`进行映射：将域模型中的每一个实体对象映射到一个独立的表中，也就是说不用在关系数据模型中考虑域模型中的继承关系和多态。[Note：我觉得应该是“同一张表中”更合适。]
+2. 使用`joined-subclass`进行映射：对于继承关系中的子类使用同一个表，这就需要在数据库表中增加额外的区分子类类型的字段。
+3. 使用`union-subclass`进行映射：域模型中的每个类映射到一个表，通过关系数据模型中的外键来描述表之间的继承关系。这也就相当于按照域模型的结构来建立数据库中的表，并通过外键来建立表之间的继承关系。
+
+### 16.1 采用`<subclass>`元素的继承映射
+* 采用`<subclass>`的继承映射可以实现对于继承关系中父类和子类使用同一张表。
+* 因为父类和子类的实例全部保存在同一个表中，因此需要在该表内增加一列，使用该列来区分每行记录到低是哪个类的实例--这个列被称为辨别者列(`<discriminator>`)。
+* 在这种映射策略下，使用`<subclass>`来映射子类， 使用`<class>`或`<subclass>`的`discriminator-value属性指定辨别者列的值
+* 所有子类定义的字段都不能有非空约束。如果为那些字段添加非空约束，那么父类的实例在那些列其实并没有值，这将引起数据库完整性冲突，导致父类的实例无法保存到数据库中。
+
+```
+<hibernate-mapping package="com.atguigu.hibernate.subclass">
+
+    <class name="Person" table="PERSONS" discriminator-value="PERSON">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <!-- 配置辨别者列 -->
+        <discriminator column="TYPE" type="java.lang.String"/>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+        <property name="age" type="int">
+            <column name="AGE"/>
+        </property>
+
+        <!-- 映射子类Student，使用subclass进行映射 -->
+        <subclass name="Student" discriminator-value="STUDENT">   <!-- 因为跟Person在同一张table中，不需要再定义table属性 -->
+            <property name="school" type="java.lang.String" column="SCHOOL"/>
+        </subclass>
+    </class>
+
+</hibernate-mapping>
+```
+
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
