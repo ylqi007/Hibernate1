@@ -651,6 +651,7 @@ Hibernate支持三种继承映射策略：
 * 因为父类和子类的实例全部保存在同一个表中，因此需要在该表内增加一列，使用该列来区分每行记录到低是哪个类的实例--这个列被称为辨别者列(`<discriminator>`)。
 * 在这种映射策略下，使用`<subclass>`来映射子类， 使用`<class>`或`<subclass>`的`discriminator-value属性指定辨别者列的值
 * 所有子类定义的字段都不能有非空约束。如果为那些字段添加非空约束，那么父类的实例在那些列其实并没有值，这将引起数据库完整性冲突，导致父类的实例无法保存到数据库中。
+![](resources/Extends_Person.Student_subclass.png)
 
 ```
 <hibernate-mapping package="com.atguigu.hibernate.subclass">
@@ -680,6 +681,37 @@ Hibernate支持三种继承映射策略：
 </hibernate-mapping>
 ```
 
+### 16.2 采用`<joined-subclass>`元素的继承映射
+* 采用`<joined-subclass>`元素的继承映射可以实现每个子类一张表
+* 采用这种映射策略时，父类实例保存在父类表中，子类实例由父类表和子类表共同存储。因为子类实例也是一个特殊的父类实例， 因此必然也包含了父类实例的属性。于是将子类和父类共有的属性保存在父类表中，子类增加的属性，则保存在子类表中。
+* 在这种映射策略下，无须使用鉴别者列，但需要为每个子类使用`<key>`元素映射共有主键。
+* 子类增加的属性可以添加非空约束, 因为子类的属性和父类的属性没有保存在同一个表中。
+![](resources/Extends_Person.Student_joined_subclass.png)
+```
+<hibernate-mapping package="com.atguigu.hibernate.joinedsubclass" auto-import="false">
+
+    <class name="Person" table="PERSONS2">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+        <property name="age" type="int">
+            <column name="AGE"/>
+        </property>
+
+        <!-- 映射子类Student，使用joined-subclass进行映射 -->
+        <joined-subclass name="Student" table="STUDENTS2">
+            <key column="STUDENT_ID"></key>
+            <property name="school" type="java.lang.String" column="SCHOOL"/>
+        </joined-subclass>
+    </class>
+
+</hibernate-mapping>
+```
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)

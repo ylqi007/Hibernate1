@@ -51,5 +51,6 @@
         <mapping resource="com/atguigu/hibernate/helloworld/entities/n2nbi/Category.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/helloworld/entities/n2nbi/Item.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/subclass/Person.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/joinedsubclass/Person.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>
