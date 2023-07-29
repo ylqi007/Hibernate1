@@ -713,6 +713,44 @@ Hibernate支持三种继承映射策略：
 </hibernate-mapping>
 ```
 
+### 16.3 采用union-subclass元素的继承映射
+* 采用`union-subclass`元素可以实现将每一个实体对象映射到一个独立的表中。
+* 子类增加的属性可以有非空约束--即父类实例的数据保存在父表中，而子类实例的数据保存在子类表中。
+* 子类实例的数据仅保存在子类表中, 而在父类表中没有任何记录。
+* 在这种映射策略下，子类表的字段会比父类表的映射字段要多,因为子类表的字段等于父类表的字段、加子类增加属性的总和。
+* 在这种映射策略下，既不需要使用鉴别者列，也无须使用`key`元素来映射共有主键。
+* 使用`union-subclass`映射策略是不可使用`identity`的主键生成策略, 因为同一类继承层次中所有实体类都需要使用同一个主键种子, 即多个持久化实体对应的记录的主键应该是连续的. 受此影响, 也不该使用`native`主键生成策略, 因为`native`会根据数据库来选择使用`identity`或`sequence`。
+![](resources/Extends_Person.Student_union_subclass.png)
+
+```xml
+<hibernate-mapping package="com.atguigu.hibernate.unionsubclass">
+
+    <class name="Person" table="PERSONS">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="hilo"/>
+        </id>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+        <property name="age" type="int">
+            <column name="AGE"/>
+        </property>
+
+        <union-subclass name="Student" table="STUDENTS">
+            <property name="school" type="java.lang.String" column="SCHOOL"/>
+        </union-subclass>
+    </class>
+
+</hibernate-mapping>
+```
+
+### 16.4 三种继承映射方式的比较
+![](resources/Extends_Comparisons.png)
+
+![](resources/Extends_示例代码.png)
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

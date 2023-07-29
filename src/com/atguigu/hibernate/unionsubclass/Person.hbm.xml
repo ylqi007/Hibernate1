@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.unionsubclass">
+
+<!--使用generator class="native"会出现以下异常-->
+<!--    org.hibernate.MappingException: Cannot use identity column key generation with <union-subclass> mapping for: com.atguigu.hibernate.unionsubclass.Person-->
+    <class name="Person" table="PERSONS">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="hilo"/>
+        </id>
+
+        <property name="name" type="java.lang.String">
+            <column name="NAME"/>
+        </property>
+        <property name="age" type="int">
+            <column name="AGE"/>
+        </property>
+
+        <!-- 映射子类Student，使用union-subclass进行映射 -->
+        <union-subclass name="Student" table="STUDENTS">
+            <property name="school" type="java.lang.String" column="SCHOOL"/>
+        </union-subclass>
+    </class>
+
+</hibernate-mapping>
