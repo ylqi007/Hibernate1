@@ -751,6 +751,40 @@ Hibernate支持三种继承映射策略：
 
 ![](resources/Extends_示例代码.png)
 
+
+## 17. Hibernate检索策略
+**概述**
+检索数据时的2个问题：
+* 不浪费内存：当Hibernate从数据库中加载Customer对象时, 如果同时加载所有关联的Order对象, 而程序实际上仅仅需要访问Customer对象, 那么这些关联的Order对象就白白浪费了许多内存。
+* 更高的查询效率：发送尽可能少的SQL语句
+
+
+### 17.1 类级别的检索策略
+* 类级别可选的检索策略包括**立即检索**和**延迟检索**，默认为延迟检索 (`lazy="true"`)
+  * 立即检索：立即加载检索方法指定的对象。(`lazy="false"`)
+  * 延迟检索：延迟加载检索方法指定的对象。在使用具体的属性时，再进行加载。(`lazy="true"`)
+* 类级别的检索策略可以通过`<class>`元素的`lazy`属性进行设置
+  ```xml
+  <class name="Customer" table="CUSTOMERS" lazy="true">   <!-- lazy="false" -->
+    <id name="customerId" type="java.lang.Integer">
+        <column name="CUSTOMER_ID"/>
+        <generator class="native"/>
+    </id>
+
+    <property name="customerName" type="java.lang.String">
+        <column name="CUSTOMER_NAME"/>
+    </property>
+
+  </class>
+  ```
+* 如果程序加载了一个对象的目的是为了访问它的属性，可以采用立即检索(`lazy="false"`)。
+* 如果程序加载了一个持久护对象的目的仅仅为了获得它的引用，可以采用延迟检索。注意可能会出现懒加载异常！
+* ⚠️ 无论`<class>`的`lazy`属性是true还是false，Session的`get()`方法及Query的`list()`方法再类级别总是使用立即检索策略。
+* 若`<class>`元素的`lazy`属性为true或默认值，Session的`load()`方法不会执行查询数据表的SELECT语句，仅返回代理类对象的实例，该代理类实例有如下特征：
+  * 由Hibernate再运行时采用CGLIB工具动态生成
+  * Hibernate创建代理类实例时，仅初始化其OID属性
+  * 在应用程序第一次访问代理类实例的非OID属性时，Hibernate会初始化代理类实例。
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

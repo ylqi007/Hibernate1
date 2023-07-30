@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.strategy.classlevel">
+
+    <class name="Order" table="ORDERS">
+        <id name="orderId" type="java.lang.Integer">
+            <column name="ORDER_ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="orderName" type="java.lang.String">
+            <column name="ORDER_NAME"/>
+        </property>
+
+        <many-to-one name="customer" class="com.atguigu.hibernate.strategy.classlevel.Customer" column="CUSTOMER_ID"/>
+    </class>
+
+</hibernate-mapping>
