@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.strategy.many2one">
+
+    <class name="Customer" table="CUSTOMERS" lazy="true" batch-size="3">
+        <id name="customerId" type="java.lang.Integer">
+            <column name="CUSTOMER_ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="customerName" type="java.lang.String">
+            <column name="CUSTOMER_NAME"/>
+        </property>
+
+        <set name="orders" table="ORDERS" inverse="true" order-by="ORDER_NAME DESC" lazy="true" batch-size="2" fetch="subselect">
+            <key column="CUSTOMER_ID"/>
+            <one-to-many class="Order"/>
+        </set>
+
+    </class>
+
+</hibernate-mapping>

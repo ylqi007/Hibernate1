@@ -57,8 +57,10 @@
 
         <mapping resource="com/atguigu/hibernate/strategy/classlevel/Customer.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/strategy/classlevel/Order.hbm.xml"/>
-        -->
         <mapping resource="com/atguigu/hibernate/strategy/set/Customer.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/strategy/set/Order.hbm.xml"/>
+        -->
+        <mapping resource="com/atguigu/hibernate/strategy/many2one/Customer.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/strategy/many2one/Order.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>

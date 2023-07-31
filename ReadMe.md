@@ -820,6 +820,21 @@ Hibernate支持三种继承映射策略：
   * Query的list()方法会忽略映射文件中配置的迫切左外连接检索策略, 而依旧采用延迟加载策略
 
 
+### 17.3 多对一和一对一关联的检索策略
+* 和`<set>`一样, `<many-to-one>`元素也有一个`lazy`属性和`fetch`属性。
+  * 若`fetch`属性设为join, 那么`lazy`属性被忽略
+  * 迫切左外连接检索策略的优点在于比立即检索策略使用的SELECT语句更少.
+  * 无代理延迟检索需要增强持久化类的字节码才能实现
+* Query的`list()`方法会忽略映射文件配置的迫切左外连接检索策略, 而采用延迟检索策略
+* 如果在关联级别使用了延迟加载或立即加载检索策略, 可以设定批量检索的大小, 以帮助提高延迟检索或立即检索的运行性能.
+* Hibernate 允许在应用程序中覆盖映射文件中设定的检索策略.
+
+
+### 17.4 检索策略小结
+![](resources/Query_Strategy_1.png)
+![](resources/Query_Strategy_2.png)
+![](resources/Query_Strategy_3.png)
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
