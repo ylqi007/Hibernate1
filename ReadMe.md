@@ -785,6 +785,41 @@ Hibernate支持三种继承映射策略：
   * Hibernate创建代理类实例时，仅初始化其OID属性
   * 在应用程序第一次访问代理类实例的非OID属性时，Hibernate会初始化代理类实例。
 
+
+### 17.2 一对多和多对多的检索策略
+* 在映射文件中，用`<set>`元素来配置**一对多**和**多对多**关联关系。`<set>`元素有`lazy`，`fetch`和`batch-size`属性。
+  * `lazy`属性: 主要决定orders集合被初始化的时机。即到底是在加载Customer对象时就被初始化，还是在访问orders集合时被初始化。
+  * `fetch`属性: 取值为`select`or`subselect`时，决定初始化orders的查询语句的形式；若取值为`join`，则决定orders集合被初始化的时机。
+  * 若把`fetch`设置为`join`, `lazy`属性将被忽略。
+  * `batch-size`属性: 用来为延迟检索策略或立即检索策略设定批量检索的数量。批量检索能减少SELECT语句的数目，提高延迟检索或立即检索的运行性能。
+  * ![](resources/set_lazy_fetch.png)
+
+延迟检索和增强延迟检索
+* 在延迟检索(`lazy="true"`)集合属性时, Hibernate在以下情况下初始化集合代理类实例
+  * 应用程序第一次访问集合属性: `iterator()`, `size()`, `isEmpty()`, `contains()`等方法
+  * 通过`Hibernate.initialize()`静态方法显式初始化
+* 增强延迟检索(`lazy="extra"`): 与`lazy=“true”`类似. 主要区别是增强延迟检索策略能进一步延迟 Customer对象的orders 集合代理实例的初始化时机：
+  * 当程序第一次访问orders属性的`iterator()`方法时, 会导致orders集合代理类实例的初始化
+  * 当程序第一次访问orders属性的`size()`, `contains()`和`isEmpty()`方法时, Hibernate不会初始化orders集合类的实例, 仅通过特定的SELECT语句查询必要的信息, 不会检索所有的Order对象
+
+* `<set>`元素的`batch-size`属性
+  * `<set>`元素有一个`batch-size`属性, 用来为延迟检索策略或立即检索策略设定批量检索的数量. 批量检索能减少SELECT语句的数目, 提高延迟检索或立即检索的运行性能
+
+用带子查询的SELECT语句批量初始化orders集合(`fetch`属性为`subselect`)
+* `<set>`元素的`fetch`属性: 取值为“select” 或 “subselect”时, 决定初始化 orders 的查询语句的形式; 若取值为”join”,则决定 orders 集合被初始化的时机。默认值为`select`
+* 当`fetch`属性为“subselect”时
+  * 假定`Session`缓存中有n个orders集合代理类实例没有被初始化,Hibernate 能够通过带子查询的 select 语句, 来批量初始化n个orders集合代理类实例
+  * `batch-size`属性将被忽略
+  * 子查询中的select语句为查询CUSTOMERS表OID的SELECT语句
+
+迫切左外连接检索(`fetch`属性值设为"join")
+* `<set>`元素的`fetch`属性: 取值为`"select"`或`"subselect"`时,决定初始化orders的查询语句的形式; 若取值为`"join"``, 则决定orders集合被初始化的时机, 默认值为`"select"`
+* 当 fetch 属性为`"join"`时:
+  * 检索Customer对象时, 会采用迫切左外连接(通过左外连接加载与检索指定的对象关联的对象)策略来检索所有关联的Order对象
+  * `lazy`属性将被忽略
+  * Query的list()方法会忽略映射文件中配置的迫切左外连接检索策略, 而依旧采用延迟加载策略
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
