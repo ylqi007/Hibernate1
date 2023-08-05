@@ -835,6 +835,130 @@ Hibernate支持三种继承映射策略：
 ![](resources/Query_Strategy_2.png)
 ![](resources/Query_Strategy_3.png)
 
+
+## 18. Hibernate检索方式
+Hibernate提供了以下几种检索对象的方式：
+* 导航对象图检索方式：根据已经加载的对象导航到其他对象 (比如 `employee.getDepartment()`)
+* OID检索方式：按照对象的OID来检索对象
+* HQL检索方式：使用面向对象的HQL查询语言
+* QBC检索方式：使用QBC (Query By Criteria) API来检索对象。这种API封装了基于字符串形式的查询语句，提供了更加面向对象的查询接口。
+* 本地SQL检索方式：使用本地数据库的SQL查询语句
+
+
+### 18.1 HQL检索方式
+HQL(Hibernate Query Language)是**面向对象的查询语言**,它和SQL查询语言有些相似。在Hibernate提供的各种检索方式中, HQL是使用最广的一种检索方式。它有如下功能:
+* 在查询语句中设定各种查询条件
+* 支持投影查询, 即仅检索出对象的部分属性
+* 支持分页查询
+* 支持连接查询
+* 支持分组查询, 允许使用`HAVING`和`GROUP BY`关键字
+* 提供内置聚集函数, 如`sum()`,`min()`和`max()`
+* 支持子查询
+* 支持动态绑定参数
+* 能够调用用户定义的SQL函数或标准的SQL函数
+
+HQL检索方式包括以下步骤:
+1. 通过Session的`createQuery()`方法创建一个Query对象，它包括一个HQL查询语句。HQL查询语句中可以包含命名参数。
+2. 动态绑定参数。Query接口支持方法链编程风格，它的`setXxx()`方法返回自身实例，而不是void类型。
+3. 调用Query相关方法执行查询语句。
+
+
+#### HQL vs SQL
+* HQL查询语句是面向对象的，Hibernate负责解析HQL查询语句，然后根据对象-关系映射文件(hbm.xml)中的映射信息，把HQL查询语句翻译成相应的SQL语句。HQL查询语句中的主体是**域模型中的类及类的属性**。
+* SQL查询语句是与关系数据库绑定在一起的。SQL查询语句中的主体是数据表及表的字段。
+
+
+#### 绑定参数
+* Hibernate的参数绑定机制依赖于JDBC API中的`PreparedStatement`的预定义SQL语句功能。
+* HQL的参数绑定由两种形式：
+  * 按参数名字绑定：在HQL查询语句中定义命名参数，命名参数以`:`开头。 (`"FROM Employee e WHERE e.salary > :sal AND e.email LIKE :email";`)
+  * 按参数位置绑定：在HQL查询语言中用`?`来定义参数位置。(`"FROM Employee e WHERE e.salary > ? AND e.email LIKE ? ORDER BY e.salary";`)
+* 相关方法：
+  * `setEntity()`: 把参数与一个持久化类绑定。(`"FROM Employee e WHERE e.salary > ? AND e.email LIKE ? AND e.department = ?";`)
+  * `setParameter()`: 绑定任意类型的参数。该方法的第三个参数显式指定Hibernate映射类型。
+* HQL采用`ORDER BY`关键字对查询结果排序。
+
+
+#### 分页查询
+* `setFirstResult(int firtResult)`: 设定从哪一个对象开始检索。参数`firstResult`表示这个对象在查询结果中的索引位置，索引位置的其实值为0。默认情况下，Query从查询结果中的第一个对象开始检索。
+* `setMaxResults(int maxResults)`: 设定一次最多检索出的对象数目。在默认情况下，`Query`和`Criteria`接口检索出查询结果中所有的对象。
+
+#### 在映射文件中定义查询语句
+* Hibernate允许在映射文件中(hbm.xml)定义字符串形式的查询语句。
+* `<query>`元素用于定义一个HQL查询语句，它和`<class>`元素并列。
+  ```xml
+  <hibernate-mapping package="com.atguigu.hibernate.entities">
+
+    <class name="Employee" table="AGG_EMPLOYEES">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String" column="NAME"/>
+        <property name="salary" type="java.lang.Float" column="SALARY"/>
+        <property name="email" type="java.lang.String" column="EMAIL"/>
+
+        <!-- 多对一映射 -->
+        <many-to-one name="department" class="Department">
+            <column name="DEPT_ID"/>    <!-- TABLE AGG_DEPARTMENT 的 DEPT_ID -->
+        </many-to-one>
+    </class>
+
+    <query name="salaryEmployees">
+        <![CDATA[FROM Employee e WHERE e.salary > :minSal AND e.salary < :maxSal]]>
+    </query>
+
+  </hibernate-mapping>
+  ```
+* 在程序中通过Session的`getNamedQuery()`方法获取查询语句对应的`Query`对象。
+
+
+#### 投影查询
+* 投影查询：查询结果仅包含实体的部分属性。通过`SELECT`关键字。
+* Query的`list()`方法返回的集合中包含的是数组类型的元素，每个对象数组代表查询结果的一条记录。
+* 可以在持久化类中定义一个对象的构造器来包装投影查询返回的记录，使程序代码能完全运用面向对象的语义来访问查询结果集。
+* 可以通过`DISTINCT`关键字来保证查询结果不会返回重复元素。
+
+
+#### 报表查询
+* 报表查询用于对数据分组和统计，与SQL一样，HQL利用`GROUP BY`关键字对数据分组，用`HAVING`关键字对分组数据设定约束条件。
+* 在HQL查询语句中可以调用以下聚集函数
+  * count()
+  * min()
+  * max()
+  * sum()
+  * avg()
+
+
+#### HQL(迫切)左外连接
+* 迫切左外连接
+  * `LEFT JOIN FETCH`关键字表示迫切左外连接检索策略。
+  * `list()`方法返回的集合中存放实体对象的引用，每个Department对象关联的Employee集合都被初始化，存放所有关联的Employee的实体对象。
+  * 查询结果中可能会包含重复元素，可以通过一个HashSet来过滤重复元素。
+* 左外连接
+  * `LEFT JOIN`关键字表示左外连接查询。
+  * `list()`方法返回的集合中存放的是对象数组类型。
+  * 根据配置文件来决定`Employee`集合的检索策略。
+  * 如果希望`list()`方法返回的集合中仅包含Department对象，可以在HQL查询语句中使用SELECT关键字。
+
+
+#### HQL(迫切)内连接
+* 迫切内连接
+  * `INNER JOIN FETCH`关键字表示迫切内连接，也可以省略`INNER`关键字。
+  * `list()`方法返回的集合中存放Department对象的引用，每个Department对象的Employee集合都被初始化，存放所有关联的Employee对象。
+* 内连接
+  * `INNER JOIN`关键字表示内连接，也可以省略`INNER`关键字。
+  * `list()`方法的集合中存放的每个元素对应查询结果的一条记录，每个元素都是对象数组类型。
+  * 如果希望`list()`方法的返回集合仅包含Department对象，可以在HQL查询语句中使用SELECT关键字。
+
+
+#### 关联级别运行时的检索策略
+* 如果在HQL中没有显式指定检索策略，将使用映射文件配置的检索策略。
+* HQL会忽略映射文件中设置的迫切左外连接检索策略，如果希望HQL采用迫切左外连接策略，就必须在HQL查询语句中显式的指定它。
+* 若在HQL代码中显式指定了检索策略，就会覆盖映射文件中的配置的检索策略。
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)

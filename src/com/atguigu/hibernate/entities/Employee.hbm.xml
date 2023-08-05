@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.atguigu.hibernate.entities">
+
+    <class name="Employee" table="AGG_EMPLOYEES">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String" column="NAME"/>
+        <property name="salary" type="java.lang.Float" column="SALARY"/>
+        <property name="email" type="java.lang.String" column="EMAIL"/>
+
+        <!-- 多对一映射 -->
+        <many-to-one name="department" class="Department">
+            <column name="DEPT_ID"/>    <!-- TABLE AGG_DEPARTMENT 的 DEPT_ID -->
+        </many-to-one>
+    </class>
+
+    <query name="salaryEmployees">
+        <![CDATA[FROM Employee e WHERE e.salary > :minSal AND e.salary < :maxSal]]>
+    </query>
+
+</hibernate-mapping>

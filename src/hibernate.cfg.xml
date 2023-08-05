@@ -9,7 +9,8 @@
         <property name="connection.username">root</property>
         <property name="connection.password">rootadmin</property>
         <property name="connection.driver_class">com.mysql.jdbc.Driver</property>
-        <property name="connection.url">jdbc:mysql://localhost:3306/hibernate5?enabledTLSProtocols=TLSv1.2</property>
+        <!-- <property name="connection.url">jdbc:mysql://localhost:3306/hibernate5?enabledTLSProtocols=TLSv1.2</property> -->
+        <property name="connection.url">jdbc:mysql://localhost:3306/atguigudb?enabledTLSProtocols=TLSv1.2</property>
         <!-- <property name="connection.url">jdbc:mysql:///hibernate5</property>--> <!--/localhost:3306 是默认的，可以省略-->
 
         <!-- 2. 配置hibernate的基本信息-->
@@ -59,8 +60,10 @@
         <mapping resource="com/atguigu/hibernate/strategy/classlevel/Order.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/strategy/set/Customer.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/strategy/set/Order.hbm.xml"/>
-        -->
         <mapping resource="com/atguigu/hibernate/strategy/many2one/Customer.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/strategy/many2one/Order.hbm.xml"/>
+        -->
+        <mapping resource="com/atguigu/hibernate/entities/Department.hbm.xml"/>
+        <mapping resource="com/atguigu/hibernate/entities/Employee.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>
