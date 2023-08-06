@@ -6,6 +6,8 @@
 <hibernate-mapping package="com.atguigu.hibernate.entities">
 
     <class name="Employee" table="AGG_EMPLOYEES">
+        <!-- <cache usage="read-write"/>-->
+
         <id name="id" type="java.lang.Integer">
             <column name="ID"/>
             <generator class="native"/>

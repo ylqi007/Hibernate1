@@ -964,6 +964,178 @@ HQL检索方式包括以下步骤:
 * 本地SQL查询来完善HQL不能涵盖所有的查询特性。
 
 
+## 19. Hibernate二级缓存
+### 19.1 Hibernate缓存
+* 缓存(Cache): 计算机领域非常通用的概念。它介于应用程序和永久性数据存储源(如硬盘上的文件或者数据库)之间，其作用是降低应用程序直接读写永久性数据存储源的频率，从而提高应用的运行性能。缓存中的数据是数据存储源中数据的拷贝。**缓存的物理介质通常是内存**。
+* Hibernate中提供了两个级别的缓存
+  * 第一级别的缓存是Session级别的缓存，它是属于事物范围的缓存。这一级别的缓存由Hibernate管理。
+  * 第二级别的缓存是SessionFactory级别的缓存，它是属于进程范围的缓存。
+
+
+### 19.2 SessionFactory级别的缓存
+SessionFactory的缓存可以分为两类：
+1. 内置缓存: Hibernate自带的，不可卸载。通常在Hibernate的初始化阶段，Hibernate会把映射元数据和预定义的SQL语句放到SessionFactory的缓存中，映射元数据是映射文件中数据(.hbm.xml文件中的数据)的复制。该内置缓存是只读的。
+2. 外置缓存(二级缓存): 一个可配置的缓存插件。在默认情况下，SessionFactory不会启用这个缓存插件。外置缓存中的数据是数据库数据的复制，外置缓存的物理介质可以是内存or硬盘。
+
+
+### 19.3 使用Hibernate的二级缓存
+适合放入二级缓存中的数据：
+* 很少被修改
+* 不是很重要的数据，允许出现偶尔的并发问题
+
+不适合放入二级缓存中的数据：
+* 经常被修改
+* 财务数据，绝对不允许出现并发问题
+* 与其他应用程序共享的数据
+
+#### Hibernate二级缓存的架构
+![](resources/Hibernate_Second_Level_Cache.png)
+
+#### 二级缓存的并发访问策略
+* 两个并发的事物同时访问持久层的缓存的相同数据时，也有可能出现各类并发问题。
+* 二级缓存可以设定以下4种类型的并发访问策略，每一种访问策略对应一种事物隔离级别
+  * 非严格读写(Nonstrict-read-write): 不保证缓存与数据库中数据的一致性. 提供Read Uncommited事务隔离级别, 对于极少被修改, 而且允许脏读的数据, 可以采用这种策略
+  * 读写型(Read-write): 提供 Read Commited 数据隔离级别.对于经常读但是很少被修改的数据, 可以采用这种隔离类型, 因为它可以防止脏读
+  * 事务型(Transactional): 仅在受管理环境下适用. 它提供了 Repeatable Read 事务隔离级别. 对于经常读但是很少被修改的数据, 可以采用这种隔离类型, 因为它可以防止脏读和不可重复读
+  * 只读型(Read-Only):提供 Serializable 数据隔离级别, 对于从来不会被修改的数据, 可以采用这种访问策略
+
+#### 管理 Hibernate 的二级缓存
+* Hibernate 的二级缓存是进程或集群范围内的缓存
+* 二级缓存是可配置的的插件, Hibernate 允许选用以下类型的缓存插件:
+  * EHCache: 可作为进程范围内的缓存, 存放数据的物理介质可以使内存或硬盘, 对 Hibernate 的查询缓存提供了支持
+  * OpenSymphony OSCache:可作为进程范围内的缓存, 存放数据的物理介质可以使内存或硬盘, 提供了丰富的缓存数据过期策略, 对 Hibernate 的查询缓存提供了支持
+  * SwarmCache: 可作为集群范围内的缓存, 但不支持 Hibernate 的查询缓存
+  * JBossCache:可作为集群范围内的缓存, 支持 Hibernate 的查询缓存
+* 4 种缓存插件支持的并发访问策略(x 代表支持, 空白代表不支持)
+  ![](resources/Hibernate_Second_Level_Cache_Management.png)
+
+
+### 19.4 配置进程范围内的二级缓存
+配置进程范围内的二级缓存的步骤:
+* 选择合适的缓存插件: EHCache(jar 包和 配置文件), 并编译器配置文件
+* 在 Hibernate 的配置文件中启用二级缓存并指定和 EHCache 对应的缓存适配器
+* 选择需要使用二级缓存的持久化类, 设置它的二级缓存的并发访问策略
+  * `<class>`元素的 cache 子元素表明 Hibernate 会缓存对象的简单属性,但不会缓存集合属性, 若希望缓存集合属性中的元素, 必须在 `<set>` 元素中加入 <cache> 子元素
+  * 在 hibernate 配置文件中通过 `<class-cache/>` 节点配置使用缓存
+
+
+#### ehcache.xml
+* `<diskStore>`: 指定一个目录： 当 EHCache 把数据写到硬盘上时, 将把数据写到这个目录下
+* `<defaultCache>`: 设置缓存的默认数据过期策略
+* `<cache>` 设定具体的命名缓存的数据过期策略。 每个命名缓存代表一个缓存区域
+* 缓存区域(region)： 一个具有名称的缓存块， 可以给每一个缓存块设置不同的缓存策略。 如果没有设置任何的缓存区域， 则所有被缓存的对象， 都将使用默认的缓存策略。 即： <defaultCache.../>
+* Hibernate在不同的缓存区域保存不同的类/集合
+  * 对于类而言， 区域的名称是类名。 如:com.atguigu.domain.Customer
+  * 对于集合而言， 区域的名称是类名加属性名。 如com.atguigu.domain.Customer.orders
+* cache元素的属性
+  * name:设置缓存的名字,它的取值为类的全限定名或类的集合的名字
+  * maxInMemory:设置基于内存的缓存中可存放的对象最大数目
+  * eternal:设置对象是否为永久的,true表示永不过期,此时将忽略 timeToIdleSeconds 和 timeToLiveSeconds属性; 默认值是false
+  * timeToIdleSeconds:设置对象空闲最长时间,以秒为单位, 超过这个时间,对象过期。 当对象过期时,EHCache会把它从缓存中清除。 如果此值为0,表示对象可以无限期地处于空闲状态
+  * timeToLiveSeconds:设置对象生存最长时间,超过这个时间,对象过期。如果此值为0,表示对象可以无限期地存在于缓存中. 该属性值必须大于或等于 timeToIdleSeconds 属性值
+  * overflowToDisk:设置基于内存的缓存中的对象数目达到上限后,是否把溢出的对象写到基于硬盘的缓存中
+
+
+#### 19.5 查询缓存
+* 对于经常使用的查询语句, 如果启用了查询缓存, 当第一次执行查询语句时, Hibernate 会把查询结果存放在查询缓存中. 以后再次执行该查询语句时, 只需从缓存中获得查询结果, 从而提高查询性能
+* 查询缓存使用于如下场合:
+  * 应用程序运行时经常使用查询语句
+  * 很少对与查询语句检索到的数据进行插入, 删除和更新操作
+* 启用查询缓存的步骤
+  * 配置二级缓存, 因为查询缓存依赖于二级缓存
+  * 在 hibernate 配置文件中启用查询缓存
+  * 对于希望启用查询缓存的查询语句, 调用 Query 的 setCacheable()方法
+
+
+#### 时间戳缓存区域
+时间戳缓存区域存放了对于查询结果相关的表进行插入, 更新或删除操作的时间戳. Hibernate 通过时间戳缓存区域来判断被缓存的查询结果是否过期, 其运行过程如下:
+* T1 时刻执行查询操作, 把查询结果存放在 QueryCache 区域, 记录该区域的时间戳为 T1
+* T2 时刻对查询结果相关的表进行更新操作, Hibernate 把 T2 时刻存放在 UpdateTimestampCache 区域.
+* T3 时刻执行查询结果前, 先比较 QueryCache 区域的时间戳和UpdateTimestampCache 区域的时间戳, 若 T2 >T1, 那么就丢弃原先存放在 QueryCache 区域的查询结果, 重新到数据库中查询数据,再把结果存放到 QueryCache 区域; 若 T2 < T1, 直接从QueryCache 中获得查询结果
+
+
+#### Query接口的iterate()方法
+Query 接口的 iterator() 方法
+* 同 list() 一样也能执行查询操作
+* list() 方法执行的 SQL 语句包含实体类对应的数据表的所有字段
+* Iterator() 方法执行的SQL 语句中仅包含实体类对应的数据表的 ID字段
+* 当遍历访问结果集时, 该方法先到 Session 缓存及二级缓存中查看是否存在特定 OID 的对象, 如果存在, 就直接返回该对象, 如果不存在该对象就通过相应的 SQL Select 语句到数据库中加载特定的实体对象
+
+大多数情况下, 应考虑使用 list() 方法执行查询操作.iterator() 方法仅在满足以下条件的场合, 可以**稍微**提高查询性能:
+* 要查询的数据表中包含大量字段
+* 启用了二级缓存, 且二级缓存中可能已经包含了待查询的对象
+
+
+### 19.6 使用Hibernat二级缓存的步骤
+1. 加入二级缓存插件的jar包以及配置文件
+   1. 复制`hibernate-release-4.2.4.Final/lib/optional/ehcache/*.jar`到当前Hibernate应用的类路径下。
+   2. 复制`hibernate-release-4.2.4.Final/project/etc/ehcache.xml`到当前WEB应用的类路径下。
+2. 配置`hibernate.cfg.xml`
+   1. 配置启用Hibernate的二级缓存
+      ```xml
+      <property name="cache.use_second_level_cache">true</property>
+      ```
+   2. 配置二级缓存产品
+      ```xml
+      <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
+      ```
+   3. 配置对哪些类使用Hibernate的二级缓存
+      ```xml
+      <class-cache class="com.atguigu.hibernate.entities.Employee" usage="read-write"/>
+      ```
+
+实际上也可以在Xxx.hbm.xml文件中配置对哪些类使用二级缓存，以及二级缓存的策略时什么。比如对Employee类
+```xml
+<hibernate-mapping package="com.atguigu.hibernate.entities">
+
+    <class name="Employee" table="AGG_EMPLOYEES">
+        <cache usage="read-write"/>
+
+        <id name="id" type="java.lang.Integer">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <property name="name" type="java.lang.String" column="NAME"/>
+        <property name="salary" type="java.lang.Float" column="SALARY"/>
+        <property name="email" type="java.lang.String" column="EMAIL"/>
+
+        <!-- 多对一映射 -->
+        <many-to-one name="department" class="Department">
+            <column name="DEPT_ID"/>    <!-- TABLE AGG_DEPARTMENT 的 DEPT_ID -->
+        </many-to-one>
+    </class>
+
+    <query name="salaryEmployees">
+        <![CDATA[FROM Employee e WHERE e.salary > :minSal AND e.salary < :maxSal]]>
+    </query>
+
+</hibernate-mapping>
+```
+
+### 2. 集合级别的二级缓存配置
+```xml
+<class-cache class="com.atguigu.hibernate.entities.Employee" usage="read-write"/>
+<class-cache class="com.atguigu.hibernate.entities.Department" usage="read-write"/>
+<collection-cache collection="com.atguigu.hibernate.entities.Department.employees" usage="read-write"/>
+```
+
+or 也可以在.hbm.xml文件中配置
+```xml
+<set name="employees" table="AGG_EMPLOYEES" inverse="true" lazy="true">
+    <cache usage="read-write"/>
+    <key column="DEPT_ID"/>
+    <one-to-many class="Employee"/>
+</set>
+```
+
+⚠️注意：还需要配置集合中元素对应的持久化类也使用二级缓存！否则将会多出n条SQL语句。
+
+### 3. 
+查询缓存：默认情况下，设置的缓存对HQL以及QBC查询时无效的，但可以通过以下方式使其有效
+1. 在Hibernate.cfg.xml配置文件中开启查询缓存。
+2. 调用Query或Criteria的`setCacheable()`方法。
+3. 查询缓存依赖于二级缓存。
 
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)

@@ -15,6 +15,7 @@
 
         <!-- 一对多映射 -->
         <set name="employees" table="AGG_EMPLOYEES" inverse="true" lazy="true">
+            <!-- <cache usage="read-write"/> -->
             <key column="DEPT_ID"/>
             <one-to-many class="Employee"/>
         </set>

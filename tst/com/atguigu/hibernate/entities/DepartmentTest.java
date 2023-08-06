@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import javax.script.ScriptEngine;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -1048,5 +1049,536 @@ class DepartmentTest {
         session.createQuery(hql)
                 .setInteger("id", 280)
                 .executeUpdate();
+    }
+
+
+    /**
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_0_,
+     *         employee0_.NAME as NAME2_1_0_,
+     *         employee0_.SALARY as SALARY3_1_0_,
+     *         employee0_.EMAIL as EMAIL4_1_0_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.ID=?
+     * Employee{id=100, name='King
+     * Employee{id=100, name='King
+     * destroyed
+     *
+     * 因为有session cache的存在，第二次查询时，cache中已经有目标对象了，就没有再次发送SELECT语句
+     */
+    @Test
+    public void testHibernateSecondLevelCache() {
+        Employee employee = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee);
+
+        Employee employee1 = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee1);
+    }
+
+    /**
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_0_,
+     *         employee0_.NAME as NAME2_1_0_,
+     *         employee0_.SALARY as SALARY3_1_0_,
+     *         employee0_.EMAIL as EMAIL4_1_0_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.ID=?
+     * Employee{id=100, name='King
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_0_,
+     *         employee0_.NAME as NAME2_1_0_,
+     *         employee0_.SALARY as SALARY3_1_0_,
+     *         employee0_.EMAIL as EMAIL4_1_0_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.ID=?
+     * Employee{id=100, name='King
+     * destroyed
+     *
+     * 二级缓存的目的
+     */
+    @Test
+    public void testHibernateSecondLevelCache1() {
+        Employee employee = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee);
+
+        transaction.commit();
+        session.close();    // 关闭session后，会清理缓存
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();
+
+        Employee employee1 = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee1);
+    }
+
+    /**
+     * Without Second Level Cache
+     *
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_0_,
+     *         employee0_.NAME as NAME2_1_0_,
+     *         employee0_.SALARY as SALARY3_1_0_,
+     *         employee0_.EMAIL as EMAIL4_1_0_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.ID=?
+     * Employee{id=100, name='King
+     * Employee{id=100, name='King
+     * destroyed
+     *
+     * 即使关闭了session，也只发送了一条SELECT语句
+     */
+    @Test
+    public void testHibernateSecondLevelCache2() {
+        Employee employee = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee);
+
+        transaction.commit();
+        session.close();    // 关闭session后，会清理缓存
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();
+
+        Employee employee1 = (Employee) session.get(Employee.class, 100);
+        System.out.println(employee1);
+    }
+
+
+    /**
+     * Hibernate:
+     *     select
+     *         department0_.ID as ID1_0_0_,
+     *         department0_.NAME as NAME2_0_0_
+     *     from
+     *         AGG_DEPARTMENTS department0_
+     *     where
+     *         department0_.ID=?
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * destroyed
+     */
+    @Test
+    public void testCollectionSecondLevelCache() {
+         Department department = (Department) session.get(Department.class, 80);
+
+        System.out.println(department.getName());
+        System.out.println(department.getEmployees().size());
+    }
+
+
+    /**
+     * Without Second Level Cache,
+     * 发送四条SQL语句
+     */
+    @Test
+    public void testCollectionSecondLevelCache1() {
+        Department department = (Department) session.get(Department.class, 80);
+
+        System.out.println(department.getName());
+        System.out.println(department.getEmployees().size());
+
+        transaction.commit();
+        session.close();    // 关闭session后，会清理缓存
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();
+
+        Department department1 = (Department) session.get(Department.class, 80);
+
+        System.out.println(department1.getName());
+        System.out.println(department1.getEmployees().size());
+    }
+
+
+    /**
+     * 对Department类使用二级缓存，Employee没有二级缓存
+     * Hibernate:
+     *     select
+     *         department0_.ID as ID1_0_0_,
+     *         department0_.NAME as NAME2_0_0_
+     *     from
+     *         AGG_DEPARTMENTS department0_
+     *     where
+     *         department0_.ID=?
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * destroyed
+     *
+     * 三条SQL语句
+     */
+    @Test
+    public void testCollectionSecondLevelCache2() {
+        Department department = (Department) session.get(Department.class, 80);
+
+        System.out.println(department.getName());
+        System.out.println(department.getEmployees().size());
+
+        transaction.commit();
+        session.close();    // 关闭session后，会清理缓存
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();
+
+        Department department1 = (Department) session.get(Department.class, 80);
+
+        System.out.println(department1.getName());
+        System.out.println(department1.getEmployees().size());
+    }
+
+    /**
+     * <class-cache class="com.atguigu.hibernate.entities.Employee" usage="read-write"/>
+     * <class-cache class="com.atguigu.hibernate.entities.Department" usage="read-write"/>
+     * <collection-cache collection="com.atguigu.hibernate.entities.Department.employees" usage="read-write"/>
+     *
+     * Hibernate:
+     *     select
+     *         department0_.ID as ID1_0_0_,
+     *         department0_.NAME as NAME2_0_0_
+     *     from
+     *         AGG_DEPARTMENTS department0_
+     *     where
+     *         department0_.ID=?
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * Sales
+     * 34
+     * destroyed
+     */
+    @Test
+    public void testCollectionSecondLevelCache3() {
+        Department department = (Department) session.get(Department.class, 80);
+
+        System.out.println(department.getName());
+        System.out.println(department.getEmployees().size());
+
+        transaction.commit();
+        session.close();    // 关闭session后，会清理缓存
+
+        session = sessionFactory.openSession(); // 开启新的session
+        transaction = session.beginTransaction();
+
+        Department department1 = (Department) session.get(Department.class, 80);
+
+        System.out.println(department1.getName());
+        System.out.println(department1.getEmployees().size());
+    }
+
+    /**
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     * 107
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     * 107
+     * destroyed
+     *
+     * cache并没有起作用
+     */
+    @Test
+    public void testQueryCache() {
+        Query query = session.createQuery("FROM Employee");
+
+        List<Employee> employees = query.list();
+        System.out.println(employees.size());
+
+        employees = query.list();
+        System.out.println(employees.size());
+    }
+
+    /**
+     *
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     * 107
+     * 107
+     * destroyed
+     */
+    @Test
+    public void testQueryCache1() {
+        Query query = session.createQuery("FROM Employee");
+        query.setCacheable(true);   // 还需要配置启用查询缓存
+
+        List<Employee> employees = query.list();
+        System.out.println(employees.size());
+
+        employees = query.list();
+        System.out.println(employees.size());
+    }
+
+    @Test
+    public void testCriteriaCache() {
+        Criteria criteria = session.createCriteria(Employee.class);
+        criteria.setCacheable(true);
+    }
+
+    /**
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     * 107
+     * Hibernate:
+     *     update
+     *         AGG_EMPLOYEES
+     *     set
+     *         NAME=?,
+     *         SALARY=?,
+     *         EMAIL=?,
+     *         DEPT_ID=?
+     *     where
+     *         ID=?
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     * 107
+     * destroyed
+     */
+    @Test
+    public void testUpdateTimeStampCache() {
+        Query query = session.createQuery("FROM Employee");
+        query.setCacheable(true);   // 还需要配置启用查询缓存
+
+        List<Employee> employees = query.list();
+        System.out.println(employees.size());
+
+        Employee employee = (Employee) session.get(Employee.class, 100);
+        employee.setSalary(30000);
+
+        employees = query.list();
+        System.out.println(employees.size());
+    }
+
+
+    /**
+     * Hibernate:
+     *     select
+     *         department0_.ID as ID1_0_0_,
+     *         department0_.NAME as NAME2_0_0_
+     *     from
+     *         AGG_DEPARTMENTS department0_
+     *     where
+     *         department0_.ID=?
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * Hibernate:
+     *     select
+     *         employee0_.ID as ID1_1_,
+     *         employee0_.NAME as NAME2_1_,
+     *         employee0_.SALARY as SALARY3_1_,
+     *         employee0_.EMAIL as EMAIL4_1_,
+     *         employee0_.DEPT_ID as DEPT_ID5_1_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.DEPT_ID=80
+     * 34
+     * destroyed
+     */
+    @Test
+    public void testQueryIterator() {
+        Department department1 = (Department) session.get(Department.class, 80);
+
+        System.out.println(department1.getName());
+        System.out.println(department1.getEmployees().size());
+
+        Query query = session.createQuery("FROM Employee e WHERE e.department.id = 80");
+        List<Employee> employees = query.list();
+        System.out.println(employees.size());
+    }
+
+
+    /**
+     * Hibernate:
+     *     select
+     *         department0_.ID as ID1_0_0_,
+     *         department0_.NAME as NAME2_0_0_
+     *     from
+     *         AGG_DEPARTMENTS department0_
+     *     where
+     *         department0_.ID=?
+     * Sales
+     * Hibernate:
+     *     select
+     *         employees0_.DEPT_ID as DEPT_ID5_0_1_,
+     *         employees0_.ID as ID1_1_1_,
+     *         employees0_.ID as ID1_1_0_,
+     *         employees0_.NAME as NAME2_1_0_,
+     *         employees0_.SALARY as SALARY3_1_0_,
+     *         employees0_.EMAIL as EMAIL4_1_0_,
+     *         employees0_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES employees0_
+     *     where
+     *         employees0_.DEPT_ID=?
+     * 34
+     * Hibernate:
+     *     select
+     *         employee0_.ID as col_0_0_
+     *     from
+     *         AGG_EMPLOYEES employee0_
+     *     where
+     *         employee0_.DEPT_ID=80
+     * Russell
+     * Partners
+     * Errazuriz
+     * Cambrault
+     * Zlotkey
+     * Tucker
+     * Bernstein
+     * Hall
+     * Olsen
+     * Cambrault
+     * Tuvault
+     * King
+     * Sully
+     * McEwen
+     * Smith
+     * Doran
+     * Sewall
+     * Vishney
+     * Greene
+     * Marvins
+     * Lee
+     * Ande
+     * Banda
+     * Ozer
+     * Bloom
+     * Fox
+     * Smith
+     * Bates
+     * Kumar
+     * Abel
+     * Hutton
+     * Taylor
+     * Livingston
+     * Johnson
+     * destroyed
+     */
+    @Test
+    public void testQueryIterator1() {
+        Department department1 = (Department) session.get(Department.class, 80);
+
+        System.out.println(department1.getName());
+        System.out.println(department1.getEmployees().size());
+
+        Query query = session.createQuery("FROM Employee e WHERE e.department.id = 80");
+        Iterator<Employee> employeeIterator = query.iterate();
+        while ((employeeIterator.hasNext())) {
+            System.out.println(employeeIterator.next().getName());
+        }
     }
 }

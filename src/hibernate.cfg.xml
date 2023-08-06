@@ -35,6 +35,14 @@
         <!-- 设定对数据库进行批量删除，批量更新和批量插入的时候的批次大小 (对Oracle有效，对MySQL无效) -->
         <property name="hibernate.jdbc.batch_size">30</property>
 
+        <!-- 配置启用Hibernate二级缓存 -->
+        <property name="cache.use_second_level_cache">true</property>
+        <!-- 配置Hibernate二级缓存使用的产品 -->
+        <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
+
+        <!-- 配置启用查询缓存 -->
+        <property name="cache.use_query_cache">true</property>
+
         <!-- 3. 指定关联的hbm.xml文件，注意是目录结构，而不是包结构 -->
         <!--
         <mapping resource="com/atguigu/hibernate/helloworld/News.hbm.xml"/>
@@ -65,5 +73,12 @@
         -->
         <mapping resource="com/atguigu/hibernate/entities/Department.hbm.xml"/>
         <mapping resource="com/atguigu/hibernate/entities/Employee.hbm.xml"/>
+
+        <!-- 也可以在Employee.hbm.xml的 <class> 元素中配置
+        <class-cache class="com.atguigu.hibernate.entities.Employee" usage="read-write"/>
+        -->
+        <class-cache class="com.atguigu.hibernate.entities.Department" usage="read-write"/>
+        <class-cache class="com.atguigu.hibernate.entities.Employee" usage="read-write"/>
+        <collection-cache collection="com.atguigu.hibernate.entities.Department.employees" usage="read-write"/>
     </session-factory>
 </hibernate-configuration>
