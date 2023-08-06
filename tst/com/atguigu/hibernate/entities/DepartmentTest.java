@@ -1,16 +1,24 @@
 package com.atguigu.hibernate.entities;
 
+import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.criterion.Conjunction;
+import org.hibernate.criterion.Disjunction;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.script.ScriptEngine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -872,5 +880,173 @@ class DepartmentTest {
         for(Employee employee: employees) {
             System.out.println(employee.getName() + ", " + employee.getDepartment().getName());
         }
+    }
+
+
+    /**
+     * Hibernate:
+     *     select
+     *         this_.ID as ID1_1_0_,
+     *         this_.NAME as NAME2_1_0_,
+     *         this_.SALARY as SALARY3_1_0_,
+     *         this_.EMAIL as EMAIL4_1_0_,
+     *         this_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES this_
+     *     where
+     *         this_.EMAIL=?
+     *         and this_.SALARY>?
+     * Employee{id=173, name='Kumar
+     * destroyed
+     */
+    @Test
+    public void testQBC() {
+        // 1. 创建Criteria对象
+        Criteria criteria = session.createCriteria(Employee.class);
+
+        // 2. 添加查询条件: 在QBC中，查询条件由Criterian表示
+        // Criterion可以通过Restrictions的静态方法获得
+        criteria.add(Restrictions.eq("email", "SKUMAR"));
+        criteria.add(Restrictions.gt("salary", 5000F));
+
+        // 3. 执行查询
+        Employee employee = (Employee) criteria.uniqueResult();
+        System.out.println(employee);
+    }
+
+
+    /**
+     * (name like %a% and department=Department{id=80, name='null'})
+     * (salary>6000.0 or email is null)
+     * Hibernate:
+     *     select
+     *         this_.ID as ID1_1_0_,
+     *         this_.NAME as NAME2_1_0_,
+     *         this_.SALARY as SALARY3_1_0_,
+     *         this_.EMAIL as EMAIL4_1_0_,
+     *         this_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES this_
+     *     where
+     *         (
+     *             this_.NAME like ?
+     *             and this_.DEPT_ID=?
+     *         )
+     *         and (
+     *             this_.SALARY>?
+     *             or this_.EMAIL is null
+     *         )
+     * destroyed
+     */
+    @Test
+    public void testQBCAndOr() {
+        Criteria criteria = session.createCriteria(Employee.class);
+
+        // 1. AND, 使用Conjunction表示, Conjunction本身就是一个Criterion对象，其其中还可以添加Criterion对象
+        Conjunction conjunction = Restrictions.conjunction();
+        conjunction.add(Restrictions.like("name", "a", MatchMode.ANYWHERE));
+        Department department = new Department();
+        department.setId(80);
+        conjunction.add(Restrictions.eq("department", department));
+        System.out.println(conjunction);    // (name like %a% and department=Department{id=80, name='null'})
+
+        // 2. OR
+        Disjunction disjunction = Restrictions.disjunction();
+        disjunction.add(Restrictions.gt("salary", 6000F));
+        disjunction.add(Restrictions.isNull("email"));
+        System.out.println(disjunction);    // (salary>6000.0 or email is null)
+
+        criteria.add(conjunction);
+        criteria.add(disjunction);
+        criteria.list();
+    }
+
+    /**
+     * Hibernate:
+     *     select
+     *         max(this_.SALARY) as y0_
+     *     from
+     *         AGG_EMPLOYEES this_
+     * 24000.0
+     * destroyed
+     */
+    @Test
+    public void testQBC3() {
+        Criteria criteria = session.createCriteria(Employee.class);
+
+        // 统计查询：使用Projection来表示: 可以由Projections的静态方法得到
+        criteria.setProjection(Projections.max("salary"));
+
+        System.out.println(criteria.uniqueResult());
+    }
+
+    /**
+     * Hibernate:
+     *     select
+     *         this_.ID as ID1_1_0_,
+     *         this_.NAME as NAME2_1_0_,
+     *         this_.SALARY as SALARY3_1_0_,
+     *         this_.EMAIL as EMAIL4_1_0_,
+     *         this_.DEPT_ID as DEPT_ID5_1_0_
+     *     from
+     *         AGG_EMPLOYEES this_
+     *     order by
+     *         this_.SALARY asc,
+     *         this_.EMAIL desc limit ?,
+     *         ?
+     * destroyed
+     */
+    @Test
+    public void testQBC4() {
+        Criteria criteria = session.createCriteria(Employee.class);
+
+        // 1. 添加排除
+        criteria.addOrder(Order.asc("salary"));
+        criteria.addOrder(Order.desc("email"));
+
+        // 2. 添加翻页方法
+        int pageSize = 5;
+        int pageNum = 3;
+        criteria.setFirstResult((pageNum - 1) * pageSize)
+                .setMaxResults(pageSize)
+                .list();
+    }
+
+
+    /**
+     * Hibernate:
+     *     INSERT
+     *     INTO
+     *         AGG_DEPARTMENTS
+     *
+     *     VALUES
+     *         (?, ?)
+     * destroyed
+     */
+    @Test
+    public void testNativeSQL() {
+        String sql = "INSERT INTO AGG_DEPARTMENTS VALUES(?, ?)";
+        Query query = session.createSQLQuery(sql);
+        query.setInteger(0, 280)
+                .setString(1, "ATGUITU")
+                .executeUpdate();
+    }
+
+
+    /**
+     * Hibernate:
+     *     delete
+     *     from
+     *         AGG_DEPARTMENTS
+     *     where
+     *         ID=?
+     * destroyed
+     */
+    @Test
+    public void testHQLUpdate() {
+        String hql = "DELETE FROM Department d WHERE d.id = :id";
+        session.createQuery(hql)
+                .setInteger("id", 280)
+                .executeUpdate();
     }
 }

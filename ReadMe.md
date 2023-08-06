@@ -959,6 +959,12 @@ HQL检索方式包括以下步骤:
 * 若在HQL代码中显式指定了检索策略，就会覆盖映射文件中的配置的检索策略。
 
 
+### 18.2 QBC检索和本地SQL检索
+* QBC查询就是通过使用Hibernate提供的Query By Criteria API查询对象，这种API封装了SQL语句的动态拼装，对查询提供了更加面向对象的功能接口。
+* 本地SQL查询来完善HQL不能涵盖所有的查询特性。
+
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
