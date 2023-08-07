@@ -1137,6 +1137,67 @@ or 也可以在.hbm.xml文件中配置
 2. 调用Query或Criteria的`setCacheable()`方法。
 3. 查询缓存依赖于二级缓存。
 
+
+## 20. 管理Session
+Hibernate自身提供了三种管理Session对象的方法
+* **Session对象的生命周期与本地线程绑定**
+* Session对象的生命周期与 JTA 事务绑定
+* Hibernate委托程序管理 Session 对象的生命周期
+
+在Hibernate的配置文件中，`hibernate.current_session_context_class`属性用于指定Session管理方式，可选值包括
+* **thread**: Session 对象的生命周期与本地线程绑定
+* jta*: Session 对象的生命周期与 JTA 事务绑定
+* managed: Hibernate 委托程序来管理 Session 对象的生命周期
+
+
+#### Session对象的生命周期与本地线程绑定
+如果把 Hibernate 配置文件的`hibernate.current_session_context_class`属性值设为`thread`, Hibernate 就会按照与本地线程绑定的方式来管理 Session
+
+Hibernate 按一下规则把 Session 与本地线程绑定
+* 当一个线程(threadA)第一次调用 SessionFactory 对象的`getCurrentSession()`方法时, 该方法会创建一个新的 Session(sessionA) 对象, 把该对象与threadA绑定, 并将 sessionA 返回
+* 当 threadA 再次调用 SessionFactory 对象的`getCurrentSession()`方法时, 该方法将返回 sessionA 对象
+* 当 threadA 提交 sessionA 对象关联的事务时, Hibernate 会自动flush sessionA 对象的缓存, 然后提交事务, 关闭 sessionA 对象. 当 threadA 撤销 sessionA 对象关联的事务时, 也会自动关闭 sessionA 对象
+* 若 threadA 再次调用 SessionFactory 对象的`getCurrentSession()`方法时, 该方法会又创建一个新的 Session(sessionB) 对象, 把该对象与 threadA 绑定, 并将sessionB 返回
+
+
+## 21. 批量处理数据
+* 批量处理数据是指在一个事务中处理大量数据。
+* 在应用层进行批量操作，主要有以下方式：
+  * 通过Session
+  * 通过HQL
+  * 通过StatelessSession
+  * **通过JDBC API**
+
+
+### 20.1 通过Session来处理批量操作
+* Session的`save()`以及`update()`方法都会把处理的对象存放在自己的缓存中. 如果通过一个 Session 对象来处理大量持久化对象, 应该及时从缓存中清空已经处理完毕并且不会再访问的对象. **具体的做法是在处理完一个对象或小批量对象后, 立即调用`flush()`方法刷新缓存, 然后在调用`clear()`方法清空缓存
+* 通过 Session 来进行处理操作会受到以下约束
+  * 需要在 Hibernate 配置文件中设置 JDBC 单次批量处理的数目, 应保证每次向数据库发送的批量的 SQL 语句数目与 batch_size 属性一致
+  * 若对象采用 “identity” 标识符生成器, 则 Hibernate 无法在 JDBC 层进行批量插入操作
+  * 进行批量操作时, 建议关闭 Hibernate 的二级缓存
+
+
+### 20.2 通过 Session 来进行批量操作
+* 批量更新: 在进行批量更新时, 如果一下子把所有对象都加载到Session缓存, 然后再缓存中一一更新, 显然是不可取的
+* 使用可滚动的结果集`org.hibernate.ScrollableResults`, 该对象中实际上并不包含任何对象, 只包含用于在线定位记录的游标. 只有当程序遍历访问 ScrollableResults 对象的特定元素时, 它才会到数据库中加载相应的对象
+* `org.hibernate.ScrollableResults`对象由 Query 的 scroll 方法返回
+
+
+### 20.3 通过 HQL 来进行批量操作
+注意: HQL 只支持 `INSERT INTO … SELECT` 形式的插入语句, 但不支持 `INSERT INTO … VALUES` 形式的插入语句. 所以使用 HQL 不能进行批量插入操作
+
+
+### 20.4 通过StatelessSession来进行批量操作
+从形式上看， StatelessSession与session的用法类似。`StatelessSession`与`session`相比， 有以下区别
+* StatelessSession没有缓存， 通过StatelessSession来加载、 保存或更新后的对象处于游离状态。
+* StatelessSession不会与Hibernate的第二级缓存交互。
+* 当调用StatelessSession的save()、 update()或delete()方法时， 这些方法会立即执行相应的SQL语句， 而不会仅计划执行一条SQL语句
+* StatelessSession不会进行脏检查， 因此修改了Customer对象属性后，还需要调用StatelessSession的update()方法来更新数据库中数据。
+* StatelessSession不会对关联的对象进行任何级联操作。
+* 通过同一个StatelessSession对象两次加载OID为1的Customer对象，得到的两个对象内存地址不同。
+* StatelessSession所做的操作可以被Interceptor拦截器捕获到， 但是会被Hibernate的事件处理系统忽略掉。
+
+
 ## Other Notes
 1. [Hibernate 4.2 Document](https://hibernate.org/orm/documentation/4.2/)
 2. [javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)](https://help.mulesoft.com/s/article/javax-net-ssl-SSLHandshakeException-No-appropriate-protocol-protocol-is-disabled-or-cipher-suites-are-inappropriate)
